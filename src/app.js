@@ -15,6 +15,16 @@ const SHARE_FIELDS = [
   "tone",
 ];
 
+const ASK_STATUSES = [
+  { value: "draft", label: "Draft", next: "ready" },
+  { value: "ready", label: "Ready", next: "sent" },
+  { value: "sent", label: "Sent", next: "replied" },
+  { value: "replied", label: "Replied", next: "starred" },
+  { value: "starred", label: "Starred", next: "starred" },
+];
+
+const VALID_ASK_STATUSES = ASK_STATUSES.map((status) => status.value);
+
 const sampleState = {
   projectName: "First Star Kit",
   tagline: "Turn a rough side project into a star-ready GitHub launch kit.",
@@ -32,6 +42,29 @@ const sampleState = {
   keywords: "github, readme, launch, open-source, marketing, developer-tools",
   tone: "direct",
   repoPulse: null,
+  askTargets: [
+    {
+      id: "sample-maker-friend",
+      name: "A maker friend",
+      channel: "Friendly DM",
+      status: "ready",
+      note: "Ask for a 30-second README clarity check.",
+    },
+    {
+      id: "sample-community",
+      name: "Open-source launch community",
+      channel: "Reddit or Discord",
+      status: "draft",
+      note: "Post the problem-first hook and ask what is missing.",
+    },
+    {
+      id: "sample-past-teammate",
+      name: "Past teammate",
+      channel: "LinkedIn or email",
+      status: "draft",
+      note: "Ask whether the repo looks useful enough to revisit.",
+    },
+  ],
 };
 
 const blankState = {
@@ -49,6 +82,7 @@ const blankState = {
   keywords: "",
   tone: "direct",
   repoPulse: null,
+  askTargets: [],
 };
 
 const initialSharedState = readSharedStateFromHash();
@@ -57,12 +91,12 @@ let activeTab = "readme";
 let toastTimer = 0;
 
 function loadInitialState(sharedState) {
-  if (sharedState) return { ...blankState, ...sharedState };
+  if (sharedState) return normalizeState({ ...blankState, ...sharedState });
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY);
-    return saved ? { ...blankState, ...JSON.parse(saved) } : { ...sampleState };
+    return saved ? normalizeState({ ...blankState, ...JSON.parse(saved) }) : normalizeState({ ...sampleState });
   } catch {
-    return { ...sampleState };
+    return normalizeState({ ...sampleState });
   }
 }
 
@@ -190,6 +224,48 @@ function titleizeRepoName(value) {
 
 function uniqueList(values) {
   return [...new Set(values.map((value) => slugify(value)).filter(Boolean))];
+}
+
+function makeAskId() {
+  if (window.crypto && typeof window.crypto.randomUUID === "function") {
+    return window.crypto.randomUUID();
+  }
+  return `ask-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function askStatusLabel(value) {
+  return ASK_STATUSES.find((status) => status.value === value)?.label || "Draft";
+}
+
+function nextAskStatus(value) {
+  return ASK_STATUSES.find((status) => status.value === value)?.next || "ready";
+}
+
+function normalizeAskTargets(targets) {
+  if (!Array.isArray(targets)) return [];
+  return targets
+    .map((target, index) => {
+      const name = String(target.name || "").trim();
+      const channel = String(target.channel || "").trim();
+      const note = String(target.note || "").trim();
+      const status = VALID_ASK_STATUSES.includes(target.status) ? target.status : "draft";
+      const id = String(target.id || `ask-${index}`).trim();
+      return {
+        id,
+        name,
+        channel,
+        status,
+        note,
+      };
+    })
+    .filter((target) => target.name || target.channel || target.note);
+}
+
+function normalizeState(value) {
+  return {
+    ...value,
+    askTargets: normalizeAskTargets(value.askTargets),
+  };
 }
 
 function parseGitHubRepoUrl(value) {
@@ -412,6 +488,97 @@ function primaryShareUrl(data) {
   if (hasUrl(data.demoUrl)) return data.demoUrl.trim();
   if (hasUrl(data.repoUrl)) return data.repoUrl.trim();
   return "https://notoow.github.io/first-star-kit/";
+}
+
+function buildAskSuggestions(data) {
+  const topics = splitKeywords(data.keywords);
+  const topic = topics[0] ? titleizeRepoName(topics[0]) : "open-source";
+  return [
+    {
+      name: "A maker friend",
+      channel: "Friendly DM",
+      status: "ready",
+      note: "Ask for a 30-second README clarity check.",
+    },
+    {
+      name: `${topic} community`,
+      channel: "Reddit or Discord",
+      status: "draft",
+      note: "Post the problem-first hook and ask what is missing.",
+    },
+    {
+      name: "Past teammate",
+      channel: "LinkedIn or email",
+      status: "draft",
+      note: "Ask whether the repo looks useful enough to revisit.",
+    },
+  ];
+}
+
+function buildAskBoard(data) {
+  const targets = normalizeAskTargets(data.askTargets);
+  const usedNames = new Set(targets.map((target) => target.name.toLowerCase()).filter(Boolean));
+  const suggestions = buildAskSuggestions(data).filter(
+    (target) => !usedNames.has(target.name.toLowerCase()),
+  );
+  const counts = ASK_STATUSES.map((status) => ({
+    ...status,
+    count: targets.filter((target) => target.status === status.value).length,
+  }));
+  const starred = targets.filter((target) => target.status === "starred").length;
+  const sent = targets.filter((target) => ["sent", "replied", "starred"].includes(target.status)).length;
+  const nextTarget =
+    targets.find((target) => target.status === "ready") ||
+    targets.find((target) => target.status === "draft") ||
+    targets.find((target) => target.status === "sent") ||
+    targets[0];
+
+  return {
+    targets,
+    suggestions,
+    counts,
+    total: targets.length,
+    sent,
+    starred,
+    nextTarget,
+  };
+}
+
+function buildAskMessage(data, target) {
+  const name = data.projectName.trim() || "my project";
+  const tagline = data.tagline.trim() || "it makes a small workflow easier";
+  const link = primaryShareUrl(data);
+  const note = target && target.note ? `\n\nContext: ${target.note}` : "";
+
+  return `Hey, I shipped ${name} and I am trying to get one honest first impression today.
+
+${tagline}
+
+Could you scan the repo for 30 seconds and tell me whether the value is clear?${note}
+
+${link}`;
+}
+
+function buildAskBoardMarkdown(data, includeTitle = true) {
+  const board = buildAskBoard(data);
+  const rows = board.targets.length
+    ? board.targets
+        .map(
+          (target) =>
+            `- ${askStatusLabel(target.status)} - ${target.name || "Unnamed"} via ${target.channel || "channel TBD"}${target.note ? `: ${target.note}` : ""}`,
+        )
+        .join("\n")
+    : "- Add one person or community before launch.";
+  const next = board.nextTarget ? buildAskMessage(data, board.nextTarget) : buildAskMessage(data, null);
+  const title = includeTitle ? "Ask Board\n\n" : "";
+
+  return `${title}Progress: ${board.sent}/${board.total} asked, ${board.starred} marked starred.
+
+${rows}
+
+Next ask:
+
+${next}`;
 }
 
 function buildStarterIssue(data) {
@@ -864,6 +1031,134 @@ function renderLaunch(posts, launchLinks) {
   `;
 }
 
+function renderAskBoard(board) {
+  const panel = document.querySelector('[data-panel="asks"]');
+  const nextCopy = board.nextTarget ? copyButton(`ask:${board.nextTarget.id}`) : copyButton("ask:next");
+  panel.innerHTML = `
+    <article class="copy-block ask-summary">
+      <div class="copy-block-head">
+        <h2>Ask board</h2>
+        ${copyButton("asks")}
+      </div>
+      <p>${board.sent}/${board.total} asks sent. ${board.starred} marked starred.</p>
+      <div class="ask-stats">
+        ${board.counts
+          .map(
+            (status) => `
+              <div class="ask-stat">
+                <strong>${status.count}</strong>
+                <span>${escapeHtml(status.label)}</span>
+              </div>
+            `,
+          )
+          .join("")}
+      </div>
+    </article>
+
+    <article class="copy-block ask-form-card">
+      <div class="copy-block-head">
+        <h2>Add ask</h2>
+        <button class="copy-button" type="button" data-action="add-ask">${icon("check")}<span>Add</span></button>
+      </div>
+      <div class="ask-form">
+        <label>
+          <span>Name or community</span>
+          <input data-ask-new="name" placeholder="A maker friend" />
+        </label>
+        <label>
+          <span>Channel</span>
+          <input data-ask-new="channel" placeholder="DM, email, Discord" />
+        </label>
+        <label>
+          <span>Status</span>
+          <select data-ask-new="status">
+            ${ASK_STATUSES.map((status) => `<option value="${status.value}">${status.label}</option>`).join("")}
+          </select>
+        </label>
+        <label class="ask-form-note">
+          <span>Note</span>
+          <textarea data-ask-new="note" rows="2" placeholder="Ask for a 30-second README clarity check."></textarea>
+        </label>
+      </div>
+    </article>
+
+    <article class="copy-block ask-next">
+      <div class="copy-block-head">
+        <h2>Next ask</h2>
+        ${nextCopy}
+      </div>
+      <p>${escapeHtml(board.nextTarget ? buildAskMessage(state, board.nextTarget) : buildAskMessage(state, null))}</p>
+    </article>
+
+    ${board.suggestions.length ? `
+      <article class="copy-block ask-suggestions">
+        <div class="copy-block-head">
+          <h2>Suggested asks</h2>
+        </div>
+        <div class="suggestion-row">
+          ${board.suggestions
+            .map(
+              (target, index) => `
+                <button class="suggestion-chip" type="button" data-action="seed-ask" data-index="${index}">
+                  ${icon("message")}
+                  <span>${escapeHtml(target.name)}</span>
+                </button>
+              `,
+            )
+            .join("")}
+        </div>
+      </article>
+    ` : ""}
+
+    <div class="ask-list">
+      ${board.targets.length
+        ? board.targets
+            .map(
+              (target) => `
+                <article class="ask-card">
+                  <div class="ask-card-top">
+                    <span class="ask-pill status-${escapeHtml(target.status)}">${escapeHtml(askStatusLabel(target.status))}</span>
+                    <div class="ask-actions">
+                      ${copyButton(`ask:${target.id}`)}
+                      <button class="mini-action" type="button" data-action="advance-ask" data-id="${escapeHtml(target.id)}">
+                        ${icon("check")}
+                        <span>Next</span>
+                      </button>
+                      <button class="mini-action muted-action" type="button" data-action="remove-ask" data-id="${escapeHtml(target.id)}">
+                        ${icon("refresh")}
+                        <span>Remove</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="ask-edit-grid">
+                    <label>
+                      <span>Name</span>
+                      <input data-ask-update="name" data-id="${escapeHtml(target.id)}" value="${escapeHtml(target.name)}" />
+                    </label>
+                    <label>
+                      <span>Channel</span>
+                      <input data-ask-update="channel" data-id="${escapeHtml(target.id)}" value="${escapeHtml(target.channel)}" />
+                    </label>
+                    <label>
+                      <span>Status</span>
+                      <select data-ask-update="status" data-id="${escapeHtml(target.id)}">
+                        ${ASK_STATUSES.map((status) => `<option value="${status.value}" ${status.value === target.status ? "selected" : ""}>${status.label}</option>`).join("")}
+                      </select>
+                    </label>
+                    <label class="ask-note-field">
+                      <span>Note</span>
+                      <textarea data-ask-update="note" data-id="${escapeHtml(target.id)}" rows="2">${escapeHtml(target.note)}</textarea>
+                    </label>
+                  </div>
+                </article>
+              `,
+            )
+            .join("")
+        : `<article class="ask-empty">${icon("message")}<span>Add one honest reviewer before you post anywhere public.</span></article>`}
+    </div>
+  `;
+}
+
 function renderHooks(hooks) {
   const panel = document.querySelector('[data-panel="hooks"]');
   panel.innerHTML = hooks
@@ -1129,6 +1424,7 @@ function render() {
   const doctor = buildDoctor(state, repoKit);
   const patchSections = buildPatchSections(state, repoKit, doctor);
   const launchLinks = buildLaunchLinks(state, repoKit, posts);
+  const askBoard = buildAskBoard(state);
 
   renderReadme(readme);
   renderHooks(hooks);
@@ -1136,6 +1432,7 @@ function render() {
   renderDoctor(doctor);
   renderPatch(patchSections);
   renderLaunch(posts, launchLinks);
+  renderAskBoard(askBoard);
   renderRepo(repoKit, badgeKit);
   renderScores(scores, nudges);
   renderPreview(repoKit);
@@ -1192,12 +1489,19 @@ function textForCopy(key) {
   const patches = buildPatchSections(state, repoKit, doctor);
   const launchLinks = buildLaunchLinks(state, repoKit, posts);
   const badges = buildBadgeStrip(state);
+  const askBoard = buildAskBoard(state);
 
   if (key === "readme") return readme;
   if (key === "launchLinks") return launchLinks.map((link) => `${link.label}: ${link.href}`).join("\n");
   if (key.startsWith("post:")) return posts[Number(key.split(":")[1])].text;
   if (key.startsWith("hook:")) return hooks[Number(key.split(":")[1])].text;
   if (key.startsWith("patch:")) return patches[Number(key.split(":")[1])].text;
+  if (key.startsWith("ask:")) {
+    const id = key.split(":")[1];
+    const target = id === "next" ? askBoard.nextTarget : askBoard.targets.find((item) => item.id === id);
+    return buildAskMessage(state, target || null);
+  }
+  if (key === "asks") return buildAskBoardMarkdown(state);
   if (key === "patch") {
     return patches.map((section) => `## ${section.title}\n\n${section.text}`).join("\n\n---\n\n");
   }
@@ -1242,6 +1546,7 @@ function buildLaunchPackMarkdown(data) {
   const patches = buildPatchSections(data, repoKit, doctor);
   const launchLinks = buildLaunchLinks(data, repoKit, posts);
   const badges = buildBadgeStrip(data);
+  const askBoard = buildAskBoardMarkdown(data, false);
   const pulse = data.repoPulse;
   const metadata = [
     `Project: ${data.projectName || "Project Name"}`,
@@ -1298,6 +1603,10 @@ ${patches.map((section) => `### ${section.title}\n\n${section.text}`).join("\n\n
 ## Launch Links
 
 ${launchLinks.map((link) => `- ${link.label}: ${link.href}`).join("\n")}
+
+## Ask Board
+
+${askBoard}
 
 ## Launch Posts
 
@@ -1534,6 +1843,78 @@ function roundRect(context, x, y, width, height, radius) {
   context.closePath();
 }
 
+function setAskTargets(targets) {
+  state = {
+    ...state,
+    askTargets: normalizeAskTargets(targets),
+  };
+  saveState();
+  render();
+}
+
+function readNewAskTarget() {
+  const values = {};
+  document.querySelectorAll("[data-ask-new]").forEach((input) => {
+    values[input.dataset.askNew] = input.value;
+  });
+  return {
+    id: makeAskId(),
+    name: String(values.name || "").trim(),
+    channel: String(values.channel || "").trim(),
+    status: VALID_ASK_STATUSES.includes(values.status) ? values.status : "draft",
+    note: String(values.note || "").trim(),
+  };
+}
+
+function clearNewAskFields() {
+  document.querySelectorAll("[data-ask-new]").forEach((input) => {
+    if (input.dataset.askNew === "status") {
+      input.value = "draft";
+      return;
+    }
+    input.value = "";
+  });
+}
+
+function addAskTarget(target) {
+  const next = {
+    id: target.id || makeAskId(),
+    name: String(target.name || "").trim(),
+    channel: String(target.channel || "").trim(),
+    status: VALID_ASK_STATUSES.includes(target.status) ? target.status : "draft",
+    note: String(target.note || "").trim(),
+  };
+  if (!next.name && !next.channel && !next.note) {
+    showToast("Add a name first");
+    return false;
+  }
+  setAskTargets([...normalizeAskTargets(state.askTargets), next]);
+  showToast("Ask added");
+  return true;
+}
+
+function updateAskTarget(id, field, value) {
+  if (!["name", "channel", "status", "note"].includes(field)) return;
+  const targets = normalizeAskTargets(state.askTargets).map((target) => {
+    if (target.id !== id) return target;
+    const nextValue = field === "status" && !VALID_ASK_STATUSES.includes(value) ? "draft" : value;
+    return { ...target, [field]: String(nextValue || "").trim() };
+  });
+  setAskTargets(targets);
+}
+
+function advanceAskTarget(id) {
+  const targets = normalizeAskTargets(state.askTargets).map((target) =>
+    target.id === id ? { ...target, status: nextAskStatus(target.status) } : target,
+  );
+  setAskTargets(targets);
+}
+
+function removeAskTarget(id) {
+  setAskTargets(normalizeAskTargets(state.askTargets).filter((target) => target.id !== id));
+  showToast("Ask removed");
+}
+
 document.querySelectorAll("[data-field]").forEach((input) => {
   input.addEventListener("input", () => {
     state = { ...state, [input.dataset.field]: input.value };
@@ -1544,6 +1925,12 @@ document.querySelectorAll("[data-field]").forEach((input) => {
 
 document.querySelectorAll("[data-tab]").forEach((button) => {
   button.addEventListener("click", () => setActiveTab(button.dataset.tab));
+});
+
+document.addEventListener("change", (event) => {
+  const input = event.target.closest("[data-ask-update]");
+  if (!input) return;
+  updateAskTarget(input.dataset.id, input.dataset.askUpdate, input.value);
 });
 
 document.addEventListener("click", (event) => {
@@ -1589,6 +1976,23 @@ document.addEventListener("click", (event) => {
   if (action.dataset.action === "copy-kit-link") {
     copyText(buildKitLink(), null);
     showToast("Kit link copied");
+  }
+
+  if (action.dataset.action === "add-ask") {
+    if (addAskTarget(readNewAskTarget())) clearNewAskFields();
+  }
+
+  if (action.dataset.action === "seed-ask") {
+    const suggestion = buildAskBoard(state).suggestions[Number(action.dataset.index)];
+    if (suggestion) addAskTarget({ ...suggestion, id: makeAskId() });
+  }
+
+  if (action.dataset.action === "advance-ask") {
+    advanceAskTarget(action.dataset.id);
+  }
+
+  if (action.dataset.action === "remove-ask") {
+    removeAskTarget(action.dataset.id);
   }
 });
 
