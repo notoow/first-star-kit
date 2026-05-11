@@ -8,8 +8,8 @@ const sampleState = {
     "their repo looks useful, but strangers cannot understand it fast enough to star it",
   promise:
     "generating a crisp README, repo metadata, and launch posts in one calm workspace",
-  demoUrl: "https://example.com/demo",
-  repoUrl: "https://github.com/you/first-star-kit",
+  demoUrl: "https://notoow.github.io/first-star-kit/",
+  repoUrl: "https://github.com/notoow/first-star-kit",
   installCommand: "Open index.html",
   usageCommand: "Describe your project, then copy the generated launch kit.",
   status: "MVP",
@@ -198,6 +198,37 @@ function buildLaunchPosts(data) {
   ];
 }
 
+function buildHooks(data) {
+  const name = data.projectName.trim() || "my side project";
+  const audience = data.audience.trim() || "developers";
+  const problem = data.problem.trim() || "the first-time experience is too hard to understand";
+  const promise = data.promise.trim() || "making the next useful step obvious";
+  const tagline = data.tagline.trim() || "A focused tool for a specific workflow.";
+
+  return [
+    {
+      title: "Problem-first",
+      text: `${audience} keep running into this: ${problem}. ${name} turns that into ${promise}.`,
+    },
+    {
+      title: "Fast promise",
+      text: `${name}: ${tagline}`,
+    },
+    {
+      title: "Before / after",
+      text: `Before: ${compact(problem, 95)}\nAfter: ${compact(promise, 95)}`,
+    },
+    {
+      title: "Feedback ask",
+      text: `I am looking for one honest first-impression check: does ${name} make sense in under 30 seconds?`,
+    },
+    {
+      title: "Star reason",
+      text: `Star ${name} if you want a small, reusable way to ${compact(promise, 100)}.`,
+    },
+  ];
+}
+
 function buildRepoChecklist(data) {
   const topics = splitKeywords(data.keywords);
   const name = data.projectName.trim() || "project-name";
@@ -261,6 +292,21 @@ function getScores(data) {
   ];
 }
 
+function getNudges(data) {
+  const nudges = [];
+  if (!data.projectName.trim()) nudges.push("Name the project before sharing.");
+  if (data.tagline.trim().length < 24) nudges.push("Make the one-line promise more concrete.");
+  if (data.problem.trim().length < 24) nudges.push("Describe the pain in a stranger's words.");
+  if (!hasUrl(data.repoUrl)) nudges.push("Add the GitHub repo URL.");
+  if (!hasUrl(data.demoUrl)) nudges.push("Add a live demo or screenshot link.");
+  if (splitKeywords(data.keywords).length < 4) nudges.push("Add at least four GitHub topics.");
+  if (!data.installCommand.trim()) nudges.push("Add the fastest way to try it.");
+
+  return nudges.length
+    ? nudges.slice(0, 4)
+    : ["Ready to share. Ask for a first impression before asking for a star."];
+}
+
 function icon(name) {
   return `<svg class="icon"><use href="#i-${name}"></use></svg>`;
 }
@@ -290,6 +336,23 @@ function renderLaunch(posts) {
             ${copyButton(`post:${index}`)}
           </div>
           <p>${escapeHtml(post.text)}</p>
+        </article>
+      `,
+    )
+    .join("");
+}
+
+function renderHooks(hooks) {
+  const panel = document.querySelector('[data-panel="hooks"]');
+  panel.innerHTML = hooks
+    .map(
+      (hook, index) => `
+        <article class="copy-block hook-block">
+          <div class="copy-block-head">
+            <h2>${escapeHtml(hook.title)}</h2>
+            ${copyButton(`hook:${index}`)}
+          </div>
+          <p>${escapeHtml(hook.text)}</p>
         </article>
       `,
     )
@@ -337,7 +400,7 @@ function renderRepo(repoKit) {
   `;
 }
 
-function renderScores(scores) {
+function renderScores(scores, nudges) {
   const total = Math.round(scores.reduce((sum, item) => sum + item.score, 0) / scores.length);
   document.getElementById("totalScore").textContent = `${total}/100`;
   document.getElementById("scoreRingValue").textContent = total;
@@ -358,6 +421,12 @@ function renderScores(scores) {
       `,
     )
     .join("");
+
+  document.getElementById("nudgeList").innerHTML = nudges
+    .map((nudge) => `<div class="nudge-item">${icon("check")}<span>${escapeHtml(nudge)}</span></div>`)
+    .join("");
+
+  return total;
 }
 
 function renderPreview(repoKit) {
@@ -382,17 +451,29 @@ function renderPreview(repoKit) {
   document.getElementById("previewLinks").innerHTML = links.join("");
 }
 
+function renderShareCard(repoKit, totalScore) {
+  document.getElementById("cardName").textContent = state.projectName || "Project Name";
+  document.getElementById("cardTagline").textContent =
+    state.tagline || "A clear one-line promise for your project.";
+  document.getElementById("cardScore").textContent = `${totalScore}/100`;
+  document.getElementById("cardTopics").textContent = repoKit.topics.slice(0, 3).join(" / ");
+}
+
 function render() {
   const readme = buildReadme(state);
   const posts = buildLaunchPosts(state);
+  const hooks = buildHooks(state);
   const repoKit = buildRepoChecklist(state);
   const scores = getScores(state);
+  const nudges = getNudges(state);
 
   renderReadme(readme);
+  renderHooks(hooks);
   renderLaunch(posts);
   renderRepo(repoKit);
-  renderScores(scores);
+  const totalScore = renderScores(scores, nudges);
   renderPreview(repoKit);
+  renderShareCard(repoKit, totalScore);
   setActiveTab(activeTab);
 }
 
@@ -438,10 +519,12 @@ async function copyText(text, button) {
 function textForCopy(key) {
   const readme = buildReadme(state);
   const posts = buildLaunchPosts(state);
+  const hooks = buildHooks(state);
   const repoKit = buildRepoChecklist(state);
 
   if (key === "readme") return readme;
   if (key.startsWith("post:")) return posts[Number(key.split(":")[1])].text;
+  if (key.startsWith("hook:")) return hooks[Number(key.split(":")[1])].text;
   if (key === "repoName") return repoKit.slug;
   if (key === "description") return repoKit.description;
   if (key === "topics") return repoKit.topics.join(", ");
@@ -458,6 +541,111 @@ function exportMarkdown() {
   anchor.download = `${repoKit.slug || "README"}.md`;
   anchor.click();
   URL.revokeObjectURL(url);
+}
+
+function wrapCanvasText(context, text, x, y, maxWidth, lineHeight, maxLines) {
+  const words = String(text).split(/\s+/).filter(Boolean);
+  const lines = [];
+  let current = "";
+
+  words.forEach((word) => {
+    const next = current ? `${current} ${word}` : word;
+    if (context.measureText(next).width <= maxWidth) {
+      current = next;
+      return;
+    }
+    if (current) lines.push(current);
+    current = word;
+  });
+  if (current) lines.push(current);
+
+  lines.slice(0, maxLines).forEach((line, index) => {
+    const output = index === maxLines - 1 && lines.length > maxLines ? `${line.replace(/[.,;:!?]*$/, "")}...` : line;
+    context.fillText(output, x, y + index * lineHeight);
+  });
+
+  return Math.min(lines.length, maxLines) * lineHeight;
+}
+
+function downloadLaunchCard() {
+  const repoKit = buildRepoChecklist(state);
+  const scores = getScores(state);
+  const total = Math.round(scores.reduce((sum, item) => sum + item.score, 0) / scores.length);
+  const canvas = document.createElement("canvas");
+  canvas.width = 1200;
+  canvas.height = 630;
+  const context = canvas.getContext("2d");
+  const name = state.projectName.trim() || "Project Name";
+  const tagline = state.tagline.trim() || "A clear one-line promise for your project.";
+  const topics = repoKit.topics.slice(0, 4);
+
+  const gradient = context.createLinearGradient(0, 0, 1200, 630);
+  gradient.addColorStop(0, "#eef7f6");
+  gradient.addColorStop(0.55, "#f9fbfd");
+  gradient.addColorStop(1, "#fff1ef");
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, 1200, 630);
+
+  context.fillStyle = "#ffffff";
+  context.strokeStyle = "#d4e0ec";
+  context.lineWidth = 3;
+  roundRect(context, 70, 70, 1060, 490, 28);
+  context.fill();
+  context.stroke();
+
+  context.fillStyle = "#0e7c7b";
+  context.font = "700 32px Segoe UI, Arial, sans-serif";
+  context.fillText("Star-ready repo", 110, 135);
+
+  context.fillStyle = "#17212f";
+  context.font = "800 72px Segoe UI, Arial, sans-serif";
+  wrapCanvasText(context, name, 110, 235, 760, 82, 2);
+
+  context.fillStyle = "#405069";
+  context.font = "400 34px Segoe UI, Arial, sans-serif";
+  wrapCanvasText(context, tagline, 110, 365, 760, 46, 3);
+
+  context.fillStyle = "#0e7c7b";
+  context.beginPath();
+  context.arc(980, 225, 82, 0, Math.PI * 2);
+  context.fill();
+  context.fillStyle = "#ffffff";
+  context.font = "800 42px Segoe UI, Arial, sans-serif";
+  context.textAlign = "center";
+  context.fillText(`${total}`, 980, 220);
+  context.font = "700 24px Segoe UI, Arial, sans-serif";
+  context.fillText("ready", 980, 255);
+  context.textAlign = "left";
+
+  let chipX = 110;
+  context.font = "700 24px Segoe UI, Arial, sans-serif";
+  topics.forEach((topic) => {
+    const width = context.measureText(topic).width + 42;
+    context.fillStyle = "#eef5ff";
+    context.strokeStyle = "#c8d7ea";
+    context.lineWidth = 2;
+    roundRect(context, chipX, 492, width, 48, 24);
+    context.fill();
+    context.stroke();
+    context.fillStyle = "#214d8f";
+    context.fillText(topic, chipX + 21, 524);
+    chipX += width + 14;
+  });
+
+  const anchor = document.createElement("a");
+  anchor.href = canvas.toDataURL("image/png");
+  anchor.download = `${repoKit.slug || "launch-card"}.png`;
+  anchor.click();
+}
+
+function roundRect(context, x, y, width, height, radius) {
+  context.beginPath();
+  context.moveTo(x + radius, y);
+  context.arcTo(x + width, y, x + width, y + height, radius);
+  context.arcTo(x + width, y + height, x, y + height, radius);
+  context.arcTo(x, y + height, x, y, radius);
+  context.arcTo(x, y, x + width, y, radius);
+  context.closePath();
 }
 
 document.querySelectorAll("[data-field]").forEach((input) => {
@@ -498,6 +686,10 @@ document.addEventListener("click", (event) => {
 
   if (action.dataset.action === "export") {
     exportMarkdown();
+  }
+
+  if (action.dataset.action === "download-card") {
+    downloadLaunchCard();
   }
 });
 

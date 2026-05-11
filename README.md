@@ -15,9 +15,11 @@ Getting a first GitHub star is often less about the code and more about whether 
 ## Features
 
 - Live README generator
+- Copy-ready hooks for posts, DMs, and first-impression asks
 - GitHub repo name, description, topics, and starter issues
 - Launch copy for X, Reddit, Hacker News, Discord, and friendly DMs
 - Star-readiness scoring for clarity, trust, and shareability
+- Shareable 1200x630 launch card PNG export
 - Local autosave and Markdown export
 - No build step, no API key, no tracking
 
@@ -31,6 +33,7 @@ Open `index.html` in a browser.
 - Preparing a repo before posting it in a community
 - Rewriting a README that explains the code, but not the value
 - Asking one friend for a fast first-impression check
+- Making a small launch image without opening a design tool
 
 ## Suggested Repo Metadata
 

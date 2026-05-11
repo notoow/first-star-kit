@@ -7,8 +7,16 @@
       name="description"
       content="First Star Kit turns a rough GitHub project idea into a polished README, repo setup checklist, and launch posts."
     />
+    <meta property="og:title" content="First Star Kit" />
+    <meta
+      property="og:description"
+      content="Turn a rough side project into a star-ready GitHub launch kit."
+    />
+    <meta property="og:image" content="https://notoow.github.io/first-star-kit/assets/preview.png" />
+    <meta property="og:url" content="https://notoow.github.io/first-star-kit/" />
+    <meta name="twitter:card" content="summary_large_image" />
     <title>First Star Kit</title>
-    <link rel="stylesheet" href="./src/styles.css?v=20260511" />
+    <link rel="stylesheet" href="./src/styles.css?v=20260511b" />
   </head>
   <body>
     <svg aria-hidden="true" class="svg-sprite">
@@ -204,6 +212,10 @@
               <svg class="icon"><use href="#i-file"></use></svg>
               <span>README</span>
             </button>
+            <button type="button" data-tab="hooks">
+              <svg class="icon"><use href="#i-sparkles"></use></svg>
+              <span>Hooks</span>
+            </button>
             <button type="button" data-tab="launch">
               <svg class="icon"><use href="#i-rocket"></use></svg>
               <span>Launch</span>
@@ -229,6 +241,7 @@
           </div>
 
           <div class="tab-content stack" data-panel="launch" hidden></div>
+          <div class="tab-content stack" data-panel="hooks" hidden></div>
           <div class="tab-content stack" data-panel="repo" hidden></div>
         </section>
 
@@ -244,6 +257,7 @@
               </div>
             </div>
             <div class="score-list" id="scoreList"></div>
+            <div class="nudge-list" id="nudgeList"></div>
           </section>
 
           <section class="panel repo-preview">
@@ -255,6 +269,26 @@
             <p id="previewDescription"></p>
             <div class="preview-links" id="previewLinks"></div>
             <div class="topic-row" id="previewTopics"></div>
+          </section>
+
+          <section class="panel share-card-panel">
+            <div class="preview-head">
+              <svg class="icon"><use href="#i-sparkles"></use></svg>
+              <span>Launch card</span>
+            </div>
+            <div class="launch-card" id="launchCard" aria-label="Generated launch card preview">
+              <div class="launch-card-kicker">Star-ready repo</div>
+              <h2 id="cardName">Project Name</h2>
+              <p id="cardTagline">A clear one-line promise for your project.</p>
+              <div class="launch-card-foot">
+                <span id="cardScore">0/100</span>
+                <span id="cardTopics">developer-tools</span>
+              </div>
+            </div>
+            <button class="wide-action" type="button" data-action="download-card">
+              <svg class="icon"><use href="#i-download"></use></svg>
+              <span>Download card</span>
+            </button>
           </section>
 
           <section class="panel checklist-panel">
@@ -279,6 +313,6 @@
       </section>
     </main>
 
-    <script src="./src/app.js?v=20260511"></script>
+    <script src="./src/app.js?v=20260511b"></script>
   </body>
 </html>
