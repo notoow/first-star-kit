@@ -251,6 +251,64 @@ function buildRepoDescription(data) {
   return compact(`${name} helps ${audience} with ${problem}`, 155);
 }
 
+function shieldSegment(value) {
+  return encodeURIComponent(String(value || "unknown").trim().replace(/-/g, "--"));
+}
+
+function staticBadge(label, message, color) {
+  return `https://img.shields.io/badge/${shieldSegment(label)}-${shieldSegment(message)}-${color}`;
+}
+
+function markdownBadge(label, badgeUrl, linkUrl) {
+  return linkUrl ? `[![${label}](${badgeUrl})](${linkUrl})` : `![${label}](${badgeUrl})`;
+}
+
+function markdownLinkUrl(value) {
+  return String(value || "").trim().replace(/\)/g, "%29").replace(/\s/g, "%20");
+}
+
+function buildBadgeStrip(data) {
+  const parsed = parseGitHubRepoUrl(data.repoUrl);
+  const demo = hasUrl(data.demoUrl) ? markdownLinkUrl(data.demoUrl) : "";
+
+  if (!parsed) {
+    const status = data.status.trim() || "MVP";
+    const license = data.license.trim() || "MIT";
+    return {
+      markdown: [
+        markdownBadge("Status", staticBadge("status", status, "0e7c7b")),
+        markdownBadge("License", staticBadge("license", license, "2b59c3")),
+        demo ? markdownBadge("Demo", staticBadge("demo", "live", "0e7c7b"), demo) : "",
+      ]
+        .filter(Boolean)
+        .join(" "),
+    };
+  }
+
+  const owner = encodeURIComponent(parsed.owner);
+  const repo = encodeURIComponent(parsed.repo);
+  const repoPath = `${owner}/${repo}`;
+  const repoUrl = `https://github.com/${parsed.owner}/${parsed.repo}`;
+  const defaultBranch = data.repoPulse && data.repoPulse.defaultBranch ? data.repoPulse.defaultBranch : "main";
+  const branchPath = encodeURIComponent(defaultBranch);
+  const badges = [
+    markdownBadge(
+      "GitHub stars",
+      `https://img.shields.io/github/stars/${repoPath}?style=social`,
+      repoUrl,
+    ),
+    markdownBadge("License", `https://img.shields.io/github/license/${repoPath}`, `${repoUrl}/blob/${branchPath}/LICENSE`),
+    markdownBadge("Last commit", `https://img.shields.io/github/last-commit/${repoPath}`, `${repoUrl}/commits`),
+    markdownBadge("Issues", `https://img.shields.io/github/issues/${repoPath}`, `${repoUrl}/issues`),
+  ];
+
+  if (demo) {
+    badges.push(markdownBadge("Demo", staticBadge("demo", "live", "0e7c7b"), demo));
+  }
+
+  return { markdown: badges.join(" ") };
+}
+
 function toneLead(tone) {
   if (tone === "playful") return "I made a tiny thing";
   if (tone === "technical") return "I built a small developer tool";
@@ -268,8 +326,11 @@ function buildReadme(data) {
   const repo = data.repoUrl.trim();
   const demo = data.demoUrl.trim();
   const keywords = splitKeywords(data.keywords);
+  const badges = buildBadgeStrip(data).markdown;
 
   return `# ${name}
+
+${badges}
 
 > ${tagline}
 
@@ -607,6 +668,7 @@ function buildPatchSections(data, repoKit, doctor) {
   const demo = data.demoUrl.trim();
   const repo = data.repoUrl.trim();
   const install = data.installCommand.trim() || "Open the project and follow the README.";
+  const badges = buildBadgeStrip(data).markdown;
   const issue = buildStarterIssue(data);
   const failedChecks = doctor.checks.filter((check) => !check.ok);
   const topFixes = failedChecks.length
@@ -623,6 +685,10 @@ function buildPatchSections(data, repoKit, doctor) {
 ${name} helps ${audience} who run into this problem: ${sentence(problem, "the workflow is harder than it should be")} It helps by ${promise}.
 
 ${demo ? `Demo: ${demo}\n` : ""}${repo ? `Repo: ${repo}\n` : ""}`,
+    },
+    {
+      title: "Badge strip",
+      text: badges,
     },
     {
       title: "Quick start",
@@ -899,7 +965,7 @@ function renderPatch(sections) {
   `;
 }
 
-function renderRepo(repoKit) {
+function renderRepo(repoKit, badgeKit) {
   const panel = document.querySelector('[data-panel="repo"]');
   panel.innerHTML = `
     <article class="copy-block">
@@ -916,6 +982,14 @@ function renderRepo(repoKit) {
         ${copyButton("description")}
       </div>
       <p>${escapeHtml(repoKit.description)}</p>
+    </article>
+
+    <article class="copy-block badge-block">
+      <div class="copy-block-head">
+        <h2>README badge strip</h2>
+        ${copyButton("badges")}
+      </div>
+      <pre class="badge-preview">${escapeHtml(badgeKit.markdown)}</pre>
     </article>
 
     <article class="copy-block">
@@ -1047,6 +1121,7 @@ function render() {
   const posts = buildLaunchPosts(state);
   const hooks = buildHooks(state);
   const repoKit = buildRepoChecklist(state);
+  const badgeKit = buildBadgeStrip(state);
   const scores = getScores(state);
   const nudges = getNudges(state);
   const totalScore = Math.round(scores.reduce((sum, item) => sum + item.score, 0) / scores.length);
@@ -1061,7 +1136,7 @@ function render() {
   renderDoctor(doctor);
   renderPatch(patchSections);
   renderLaunch(posts, launchLinks);
-  renderRepo(repoKit);
+  renderRepo(repoKit, badgeKit);
   renderScores(scores, nudges);
   renderPreview(repoKit);
   renderRepoPulse(state.repoPulse);
@@ -1116,6 +1191,7 @@ function textForCopy(key) {
   const doctor = buildDoctor(state, repoKit);
   const patches = buildPatchSections(state, repoKit, doctor);
   const launchLinks = buildLaunchLinks(state, repoKit, posts);
+  const badges = buildBadgeStrip(state);
 
   if (key === "readme") return readme;
   if (key === "launchLinks") return launchLinks.map((link) => `${link.label}: ${link.href}`).join("\n");
@@ -1138,6 +1214,7 @@ function textForCopy(key) {
   }
   if (key === "repoName") return repoKit.slug;
   if (key === "description") return repoKit.description;
+  if (key === "badges") return badges.markdown;
   if (key === "topics") return repoKit.topics.join(", ");
   if (key === "issues") return repoKit.issues.map((issue) => `- ${issue}`).join("\n");
   return "";
@@ -1164,6 +1241,7 @@ function buildLaunchPackMarkdown(data) {
   const doctor = buildDoctor(data, repoKit);
   const patches = buildPatchSections(data, repoKit, doctor);
   const launchLinks = buildLaunchLinks(data, repoKit, posts);
+  const badges = buildBadgeStrip(data);
   const pulse = data.repoPulse;
   const metadata = [
     `Project: ${data.projectName || "Project Name"}`,
@@ -1194,6 +1272,10 @@ Prepared with First Star Kit.
 ${metadata.map((item) => `- ${item}`).join("\n")}
 
 ${pulseBlock}
+
+## README Badge Strip
+
+${badges.markdown}
 
 ## Star Readiness
 

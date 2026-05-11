@@ -516,6 +516,21 @@ p {
   word-break: break-word;
 }
 
+.badge-preview {
+  overflow: auto;
+  margin: 13px 0 0;
+  border: 1px solid #d7e0ea;
+  border-radius: 8px;
+  color: #1f2a3a;
+  background: #ffffff;
+  padding: 13px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .launch-summary p {
   color: var(--muted);
 }
