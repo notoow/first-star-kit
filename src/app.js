@@ -563,9 +563,12 @@ function buildFirstStarAsk(data) {
   const name = data.projectName.trim() || "my open-source project";
   const repo = hasUrl(data.repoUrl) ? data.repoUrl.trim() : primaryShareUrl(data);
 
-  return `I am trying to earn the first GitHub star for ${name}.
+  return `나 첫 GitHub star 하나만 받아보고 싶어.
 
-Could you scan it for 30 seconds and star it if the value is clear?
+작은 오픈소스 앱 만들었어: ${name}
+
+30초만 봐주고 괜찮으면 star 하나 눌러줄 수 있어?
+진짜 큰 힘 될 것 같아.
 
 ${repo}`;
 }
