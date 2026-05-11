@@ -263,6 +263,80 @@ function buildLaunchPosts(data) {
   ];
 }
 
+function primaryShareUrl(data) {
+  if (hasUrl(data.demoUrl)) return data.demoUrl.trim();
+  if (hasUrl(data.repoUrl)) return data.repoUrl.trim();
+  return "https://notoow.github.io/first-star-kit/";
+}
+
+function buildStarterIssue(data) {
+  const name = data.projectName.trim() || "Project Name";
+  return {
+    title: `Improve the first-run experience for ${name}`,
+    body: `The first-run path should feel obvious to someone landing on the repo for the first time.
+
+Tasks:
+- Confirm the README explains the problem in one screen.
+- Confirm the demo or screenshot is visible before the feature list.
+- Run the quick start and note the first confusing step.
+- Suggest one sentence that would make the value clearer.
+
+Good first issue: yes`,
+  };
+}
+
+function buildLaunchLinks(data, repoKit, posts) {
+  const name = data.projectName.trim() || "my project";
+  const url = primaryShareUrl(data);
+  const repo = parseGitHubRepoUrl(data.repoUrl);
+  const xText = posts[0].text;
+  const hnTitle = `Show HN: ${name} - ${compact(data.tagline || "a small tool for developers", 70)}`;
+  const redditTitle = `${name}: ${compact(data.tagline || "a small tool for developers", 120)}`;
+  const issue = buildStarterIssue(data);
+  const links = [
+    {
+      label: "Post to X",
+      href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(xText)}`,
+      detail: "Open a prefilled launch post.",
+    },
+    {
+      label: "Submit to HN",
+      href: `https://news.ycombinator.com/submitlink?u=${encodeURIComponent(url)}&t=${encodeURIComponent(hnTitle)}`,
+      detail: "Open Show HN submission.",
+    },
+    {
+      label: "Post to Reddit",
+      href: `https://www.reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(redditTitle)}`,
+      detail: "Open a prefilled subreddit post.",
+    },
+    {
+      label: "Share on LinkedIn",
+      href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+      detail: "Open a professional share dialog.",
+    },
+    {
+      label: "Email a friend",
+      href: `mailto:?subject=${encodeURIComponent(`Quick first impression on ${name}?`)}&body=${encodeURIComponent(posts.find((post) => post.title === "Friendly DM").text)}`,
+      detail: "Ask one person for honest feedback.",
+    },
+  ];
+
+  if (repo) {
+    links.push({
+      label: "Create starter issue",
+      href: `https://github.com/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}/issues/new?title=${encodeURIComponent(issue.title)}&body=${encodeURIComponent(issue.body)}&labels=${encodeURIComponent("good first issue")}`,
+      detail: "Open GitHub with the first issue drafted.",
+    });
+    links.push({
+      label: "Open repo",
+      href: `https://github.com/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}`,
+      detail: `${repoKit.topics.length} topics prepared.`,
+    });
+  }
+
+  return links;
+}
+
 function buildHooks(data) {
   const name = data.projectName.trim() || "my side project";
   const audience = data.audience.trim() || "developers";
@@ -449,7 +523,7 @@ function buildPatchSections(data, repoKit, doctor) {
   const demo = data.demoUrl.trim();
   const repo = data.repoUrl.trim();
   const install = data.installCommand.trim() || "Open the project and follow the README.";
-  const issueTitle = `Improve the first-run experience for ${name}`;
+  const issue = buildStarterIssue(data);
   const failedChecks = doctor.checks.filter((check) => !check.ok);
   const topFixes = failedChecks.length
     ? failedChecks.map((check) => `- ${check.label}: ${check.fix}`).join("\n")
@@ -487,18 +561,10 @@ Try the smallest useful path first. If anything is confusing, open an issue with
     },
     {
       title: "Starter issue",
-      text: `Title: ${issueTitle}
+      text: `Title: ${issue.title}
 
 Body:
-The first-run path should feel obvious to someone landing on the repo for the first time.
-
-Tasks:
-- Confirm the README explains the problem in one screen.
-- Confirm the demo or screenshot is visible before the feature list.
-- Run the quick start and note the first confusing step.
-- Suggest one sentence that would make the value clearer.
-
-Good first issue: yes`,
+${issue.body}`,
     },
     {
       title: "Doctor fixes",
@@ -609,11 +675,32 @@ function renderReadme(readme) {
   document.getElementById("readmePreview").textContent = readme;
 }
 
-function renderLaunch(posts) {
+function renderLaunch(posts, launchLinks) {
   const panel = document.querySelector('[data-panel="launch"]');
-  panel.innerHTML = posts
-    .map(
-      (post, index) => `
+  panel.innerHTML = `
+    <article class="copy-block launch-summary">
+      <div class="copy-block-head">
+        <h2>Launch links</h2>
+        ${copyButton("launchLinks")}
+      </div>
+      <p>Open the places where a first star can happen. Review before posting.</p>
+      <div class="launch-link-grid">
+        ${launchLinks
+          .map(
+            (link) => `
+              <a class="launch-link" href="${escapeHtml(link.href)}" target="_blank" rel="noreferrer">
+                ${icon("rocket")}
+                <span>${escapeHtml(link.label)}</span>
+                <small>${escapeHtml(link.detail)}</small>
+              </a>
+            `,
+          )
+          .join("")}
+      </div>
+    </article>
+    ${posts
+      .map(
+        (post, index) => `
         <article class="copy-block">
           <div class="copy-block-head">
             <h2>${escapeHtml(post.title)}</h2>
@@ -622,8 +709,9 @@ function renderLaunch(posts) {
           <p>${escapeHtml(post.text)}</p>
         </article>
       `,
-    )
-    .join("");
+      )
+      .join("")}
+  `;
 }
 
 function renderHooks(hooks) {
@@ -881,13 +969,14 @@ function render() {
   const sprint = buildSprintPlan(state, repoKit, totalScore);
   const doctor = buildDoctor(state, repoKit);
   const patchSections = buildPatchSections(state, repoKit, doctor);
+  const launchLinks = buildLaunchLinks(state, repoKit, posts);
 
   renderReadme(readme);
   renderHooks(hooks);
   renderSprint(sprint);
   renderDoctor(doctor);
   renderPatch(patchSections);
-  renderLaunch(posts);
+  renderLaunch(posts, launchLinks);
   renderRepo(repoKit);
   renderScores(scores, nudges);
   renderPreview(repoKit);
@@ -942,8 +1031,10 @@ function textForCopy(key) {
   const repoKit = buildRepoChecklist(state);
   const doctor = buildDoctor(state, repoKit);
   const patches = buildPatchSections(state, repoKit, doctor);
+  const launchLinks = buildLaunchLinks(state, repoKit, posts);
 
   if (key === "readme") return readme;
+  if (key === "launchLinks") return launchLinks.map((link) => `${link.label}: ${link.href}`).join("\n");
   if (key.startsWith("post:")) return posts[Number(key.split(":")[1])].text;
   if (key.startsWith("hook:")) return hooks[Number(key.split(":")[1])].text;
   if (key.startsWith("patch:")) return patches[Number(key.split(":")[1])].text;

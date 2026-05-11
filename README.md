@@ -19,6 +19,7 @@ Getting a first GitHub star is often less about the code and more about whether 
 - Repo Pulse for stars, forks, issue count, recent activity, README, license, homepage, and topics
 - README Doctor for first-impression gaps and exact fixes
 - Drop-in README patches for hero copy, quick start, why section, starter issue, and feedback ask
+- Launch links for X, Hacker News, Reddit, LinkedIn, email, GitHub starter issue, and repo
 - Copy-ready hooks for posts, DMs, and first-impression asks
 - 30-minute first-star sprint plan
 - GitHub repo name, description, topics, and starter issues
