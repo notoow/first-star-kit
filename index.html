@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="First Star Kit turns a rough GitHub project idea into a polished README, repo setup checklist, and launch posts."
+    />
+    <title>First Star Kit</title>
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <svg aria-hidden="true" class="svg-sprite">
+      <symbol id="i-badge" viewBox="0 0 24 24">
+        <path d="m9 12 2 2 4-4" />
+        <path d="M20 6 9 17l-5-5" />
+      </symbol>
+      <symbol id="i-check" viewBox="0 0 24 24">
+        <path d="M20 6 9 17l-5-5" />
+      </symbol>
+      <symbol id="i-clipboard" viewBox="0 0 24 24">
+        <rect width="14" height="18" x="5" y="3" rx="2" />
+        <path d="M9 3h6v4H9z" />
+      </symbol>
+      <symbol id="i-download" viewBox="0 0 24 24">
+        <path d="M12 3v12" />
+        <path d="m7 10 5 5 5-5" />
+        <path d="M5 21h14" />
+      </symbol>
+      <symbol id="i-file" viewBox="0 0 24 24">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <path d="M14 2v6h6" />
+        <path d="M8 13h8" />
+        <path d="M8 17h5" />
+      </symbol>
+      <symbol id="i-gauge" viewBox="0 0 24 24">
+        <path d="M12 14 16 8" />
+        <path d="M3.34 19a10 10 0 1 1 17.32 0" />
+      </symbol>
+      <symbol id="i-github" viewBox="0 0 24 24">
+        <path d="M15 22v-4a4.8 4.8 0 0 0-1-3c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5a10.4 10.4 0 0 0-6 0C8 2.5 7 2.5 7 2.5c-.3 1.15-.3 2.35 0 3.5a5.4 5.4 0 0 0-1 3.5C6 13 9 15 12 15a4.8 4.8 0 0 0-1 3v4" />
+        <path d="M9 18c-4.5 2-5-2-7-2" />
+      </symbol>
+      <symbol id="i-link" viewBox="0 0 24 24">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+      </symbol>
+      <symbol id="i-message" viewBox="0 0 24 24">
+        <path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+      </symbol>
+      <symbol id="i-play" viewBox="0 0 24 24">
+        <path d="m8 5 11 7-11 7z" />
+      </symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24">
+        <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+        <path d="M21 3v5h-5" />
+        <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+        <path d="M3 21v-5h5" />
+      </symbol>
+      <symbol id="i-rocket" viewBox="0 0 24 24">
+        <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+        <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22 22 0 0 1-4 2z" />
+        <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+        <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+      </symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24">
+        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+        <circle cx="12" cy="12" r="3" />
+      </symbol>
+      <symbol id="i-sparkles" viewBox="0 0 24 24">
+        <path d="m12 3-1.9 5.5L5 10.4l5.1 1.9L12 18l1.9-5.7 5.1-1.9-5.1-1.9z" />
+        <path d="M19 3v4" />
+        <path d="M21 5h-4" />
+        <path d="M5 17v3" />
+        <path d="M6.5 18.5h-3" />
+      </symbol>
+      <symbol id="i-star" viewBox="0 0 24 24">
+        <path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z" />
+      </symbol>
+      <symbol id="i-wand" viewBox="0 0 24 24">
+        <path d="M15 4V2" />
+        <path d="M15 16v-2" />
+        <path d="M8 9h2" />
+        <path d="M20 9h2" />
+        <path d="M17.8 6.2 19 5" />
+        <path d="M15 9h.01" />
+        <path d="M17.8 11.8 19 13" />
+        <path d="M12.2 6.2 11 5" />
+        <path d="m3 21 9-9" />
+        <path d="M12 12 9 9" />
+      </symbol>
+    </svg>
+
+    <main class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <svg class="icon"><use href="#i-star"></use></svg>
+          </div>
+          <div>
+            <p>First Star Kit</p>
+            <span>Repo launch copy, sharpened in one pass</span>
+          </div>
+        </div>
+        <div class="top-actions">
+          <button class="icon-button" type="button" title="Load sample" aria-label="Load sample" data-action="sample">
+            <svg class="icon"><use href="#i-wand"></use></svg>
+          </button>
+          <button class="icon-button" type="button" title="Clear fields" aria-label="Clear fields" data-action="clear">
+            <svg class="icon"><use href="#i-refresh"></use></svg>
+          </button>
+          <button class="primary-action" type="button" data-action="export">
+            <svg class="icon"><use href="#i-download"></use></svg>
+            <span>Export README</span>
+          </button>
+        </div>
+      </header>
+
+      <section class="workspace">
+        <aside class="panel input-panel" aria-label="Project input">
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">Describe the project</span>
+              <h1>Make the repo instantly legible.</h1>
+            </div>
+            <svg class="icon panel-icon"><use href="#i-sparkles"></use></svg>
+          </div>
+
+          <label class="field">
+            <span>Project name</span>
+            <input data-field="projectName" placeholder="Example: ClipShelf" />
+          </label>
+          <label class="field">
+            <span>One-line promise</span>
+            <input data-field="tagline" placeholder="Save useful snippets from any tab in two keystrokes." />
+          </label>
+          <label class="field">
+            <span>Who is it for?</span>
+            <input data-field="audience" placeholder="Indie hackers, frontend teams, students..." />
+          </label>
+          <label class="field">
+            <span>Pain it fixes</span>
+            <textarea data-field="problem" placeholder="The current workflow is scattered across notes and bookmarks." rows="4"></textarea>
+          </label>
+          <label class="field">
+            <span>How it helps</span>
+            <textarea data-field="promise" placeholder="It gives each saved item context, tags, and a shareable link." rows="4"></textarea>
+          </label>
+
+          <div class="two-col">
+            <label class="field">
+              <span>Repo URL</span>
+              <input data-field="repoUrl" placeholder="https://github.com/you/project" />
+            </label>
+            <label class="field">
+              <span>Demo URL</span>
+              <input data-field="demoUrl" placeholder="https://project.dev" />
+            </label>
+          </div>
+
+          <label class="field">
+            <span>Install command</span>
+            <input data-field="installCommand" placeholder="Open index.html" />
+          </label>
+          <label class="field">
+            <span>Usage</span>
+            <input data-field="usageCommand" placeholder="Describe your project, then copy the generated kit." />
+          </label>
+
+          <div class="two-col">
+            <label class="field">
+              <span>Status</span>
+              <select data-field="status">
+                <option>MVP</option>
+                <option>Beta</option>
+                <option>Stable</option>
+                <option>Experimental</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Tone</span>
+              <select data-field="tone">
+                <option value="direct">Direct</option>
+                <option value="playful">Playful</option>
+                <option value="technical">Technical</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="field">
+            <span>Topics</span>
+            <input data-field="keywords" placeholder="github, readme, launch, developer-tools" />
+          </label>
+          <label class="field">
+            <span>License</span>
+            <input data-field="license" placeholder="MIT" />
+          </label>
+        </aside>
+
+        <section class="panel output-panel" aria-label="Generated launch kit">
+          <div class="tabs" role="tablist" aria-label="Launch kit sections">
+            <button class="active" type="button" data-tab="readme">
+              <svg class="icon"><use href="#i-file"></use></svg>
+              <span>README</span>
+            </button>
+            <button type="button" data-tab="launch">
+              <svg class="icon"><use href="#i-rocket"></use></svg>
+              <span>Launch</span>
+            </button>
+            <button type="button" data-tab="repo">
+              <svg class="icon"><use href="#i-settings"></use></svg>
+              <span>Repo setup</span>
+            </button>
+          </div>
+
+          <div class="tab-content" data-panel="readme">
+            <div class="section-title">
+              <div>
+                <span class="eyebrow">Markdown</span>
+                <h2>README draft</h2>
+              </div>
+              <button class="copy-button" type="button" data-copy="readme">
+                <svg class="icon"><use href="#i-clipboard"></use></svg>
+                <span>Copy</span>
+              </button>
+            </div>
+            <pre class="readme-preview" id="readmePreview"></pre>
+          </div>
+
+          <div class="tab-content stack" data-panel="launch" hidden></div>
+          <div class="tab-content stack" data-panel="repo" hidden></div>
+        </section>
+
+        <aside class="side-rail" aria-label="Readiness and preview">
+          <section class="panel score-panel">
+            <div class="score-top">
+              <div>
+                <span class="eyebrow">Star readiness</span>
+                <h2 id="totalScore">0/100</h2>
+              </div>
+              <div class="score-ring" id="scoreRing" aria-label="Score 0">
+                <span id="scoreRingValue">0</span>
+              </div>
+            </div>
+            <div class="score-list" id="scoreList"></div>
+          </section>
+
+          <section class="panel repo-preview">
+            <div class="preview-head">
+              <svg class="icon"><use href="#i-github"></use></svg>
+              <span>GitHub preview</span>
+            </div>
+            <h2 id="previewName">project-name</h2>
+            <p id="previewDescription"></p>
+            <div class="preview-links" id="previewLinks"></div>
+            <div class="topic-row" id="previewTopics"></div>
+          </section>
+
+          <section class="panel checklist-panel">
+            <div class="check-row">
+              <svg class="icon"><use href="#i-badge"></use></svg>
+              <span>README has a one-line promise</span>
+            </div>
+            <div class="check-row">
+              <svg class="icon"><use href="#i-link"></use></svg>
+              <span>Repo and demo links are visible</span>
+            </div>
+            <div class="check-row">
+              <svg class="icon"><use href="#i-message"></use></svg>
+              <span>Launch copy asks for feedback first</span>
+            </div>
+            <div class="check-row">
+              <svg class="icon"><use href="#i-gauge"></use></svg>
+              <span>Score updates as you sharpen the pitch</span>
+            </div>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <script src="./src/app.js"></script>
+  </body>
+</html>
