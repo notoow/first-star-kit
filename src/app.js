@@ -1,4 +1,19 @@
 const STORAGE_KEY = "first-star-kit-state-v1";
+const SHARE_FIELDS = [
+  "projectName",
+  "tagline",
+  "audience",
+  "problem",
+  "promise",
+  "demoUrl",
+  "repoUrl",
+  "installCommand",
+  "usageCommand",
+  "status",
+  "license",
+  "keywords",
+  "tone",
+];
 
 const sampleState = {
   projectName: "First Star Kit",
@@ -36,10 +51,13 @@ const blankState = {
   repoPulse: null,
 };
 
-let state = loadInitialState();
+const initialSharedState = readSharedStateFromHash();
+let state = loadInitialState(initialSharedState);
 let activeTab = "readme";
+let toastTimer = 0;
 
-function loadInitialState() {
+function loadInitialState(sharedState) {
+  if (sharedState) return { ...blankState, ...sharedState };
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY);
     return saved ? { ...blankState, ...JSON.parse(saved) } : { ...sampleState };
@@ -50,6 +68,72 @@ function loadInitialState() {
 
 function saveState() {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function encodeSharePayload(payload) {
+  const json = JSON.stringify(payload);
+  const bytes = new TextEncoder().encode(json);
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return window
+    .btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function decodeSharePayload(value) {
+  const base64 = String(value || "").replace(/-/g, "+").replace(/_/g, "/");
+  const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+  const binary = window.atob(padded);
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+function readSharedStateFromHash() {
+  const match = window.location.hash.match(/^#kit=([^&]+)/);
+  if (!match) return null;
+  try {
+    const payload = decodeSharePayload(match[1]);
+    const source = payload && payload.state ? payload.state : payload;
+    const shared = {};
+    SHARE_FIELDS.forEach((key) => {
+      if (typeof source[key] === "string") shared[key] = source[key];
+    });
+    if (shared.tone && !["direct", "playful", "technical"].includes(shared.tone)) {
+      shared.tone = "direct";
+    }
+    return Object.keys(shared).length ? shared : null;
+  } catch {
+    return null;
+  }
+}
+
+function serializeShareState() {
+  const shared = {};
+  SHARE_FIELDS.forEach((key) => {
+    shared[key] = state[key] || "";
+  });
+  return shared;
+}
+
+function buildKitLink() {
+  const url = new URL(window.location.href);
+  url.hash = `kit=${encodeSharePayload({ v: 1, state: serializeShareState() })}`;
+  return url.toString();
+}
+
+function showToast(message) {
+  const toast = document.getElementById("toast");
+  if (!toast) return;
+  window.clearTimeout(toastTimer);
+  toast.textContent = message;
+  toast.classList.add("show");
+  toastTimer = window.setTimeout(() => {
+    toast.classList.remove("show");
+  }, 1700);
 }
 
 function escapeHtml(value) {
@@ -1011,11 +1095,11 @@ async function copyText(text, button) {
     }
     if (button) {
       const label = button.querySelector("span");
-      const original = label.textContent;
-      label.textContent = "Copied";
+      const original = label ? label.textContent : "";
+      if (label) label.textContent = "Copied";
       button.classList.add("copied");
       window.setTimeout(() => {
-        label.textContent = original;
+        if (label) label.textContent = original;
         button.classList.remove("copied");
       }, 1200);
     }
@@ -1327,7 +1411,16 @@ document.addEventListener("click", (event) => {
   if (action.dataset.action === "import-repo") {
     importRepoFromGitHub(action);
   }
+
+  if (action.dataset.action === "copy-kit-link") {
+    copyText(buildKitLink(), null);
+    showToast("Kit link copied");
+  }
 });
 
 setInputs();
 render();
+if (initialSharedState) {
+  saveState();
+  showToast("Loaded kit from link");
+}

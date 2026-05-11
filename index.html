@@ -16,7 +16,7 @@
     <meta property="og:url" content="https://notoow.github.io/first-star-kit/" />
     <meta name="twitter:card" content="summary_large_image" />
     <title>First Star Kit</title>
-    <link rel="stylesheet" href="./src/styles.css?v=20260511g" />
+    <link rel="stylesheet" href="./src/styles.css?v=20260511h" />
   </head>
   <body>
     <svg aria-hidden="true" class="svg-sprite">
@@ -118,12 +118,16 @@
           <button class="icon-button" type="button" title="Clear fields" aria-label="Clear fields" data-action="clear">
             <svg class="icon"><use href="#i-refresh"></use></svg>
           </button>
+          <button class="icon-button" type="button" title="Copy kit link" aria-label="Copy kit link" data-action="copy-kit-link">
+            <svg class="icon"><use href="#i-link"></use></svg>
+          </button>
           <button class="primary-action" type="button" data-action="export">
             <svg class="icon"><use href="#i-download"></use></svg>
             <span>Export README</span>
           </button>
         </div>
       </header>
+      <div class="toast" id="toast" aria-live="polite"></div>
 
       <section class="workspace">
         <aside class="panel input-panel" aria-label="Project input">
@@ -343,6 +347,6 @@
       </section>
     </main>
 
-    <script src="./src/app.js?v=20260511g"></script>
+    <script src="./src/app.js?v=20260511h"></script>
   </body>
 </html>

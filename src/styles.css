@@ -138,6 +138,32 @@ a {
   gap: 8px;
 }
 
+.toast {
+  position: fixed;
+  z-index: 20;
+  top: 18px;
+  left: 50%;
+  transform: translate(-50%, -16px);
+  border: 1px solid rgba(14, 124, 123, 0.22);
+  border-radius: 8px;
+  color: var(--teal-dark);
+  background: rgba(239, 250, 248, 0.98);
+  box-shadow: var(--shadow);
+  padding: 10px 13px;
+  font-size: 13px;
+  font-weight: 800;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 .icon-button,
 .primary-action,
 .copy-button,
