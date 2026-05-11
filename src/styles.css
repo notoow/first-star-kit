@@ -384,7 +384,7 @@ p {
 
 .tabs {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 16px;
 }
@@ -516,6 +516,82 @@ p {
   font-size: 14px;
   line-height: 1.45;
   word-break: break-word;
+}
+
+.doctor-summary p {
+  color: var(--muted);
+}
+
+.doctor-list {
+  display: grid;
+  gap: 10px;
+}
+
+.doctor-card {
+  border: 1px solid #d7e0ea;
+  border-radius: 8px;
+  background: var(--panel-strong);
+  padding: 14px;
+}
+
+.doctor-card.warn {
+  border-color: rgba(232, 93, 79, 0.28);
+  background: #fff8f6;
+}
+
+.doctor-card-head {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: center;
+}
+
+.doctor-card-head .icon {
+  color: var(--teal);
+}
+
+.doctor-card.warn .doctor-card-head .icon {
+  color: #9c352c;
+}
+
+.doctor-card h2 {
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.doctor-card-head span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border: 1px solid rgba(14, 124, 123, 0.24);
+  border-radius: 999px;
+  color: var(--teal-dark);
+  background: #effaf8;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.doctor-card.warn .doctor-card-head span {
+  border-color: rgba(232, 93, 79, 0.32);
+  color: #9c352c;
+  background: #fff5f3;
+}
+
+.doctor-card p {
+  margin-top: 10px;
+  color: #34445b;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.doctor-card strong {
+  display: block;
+  margin-top: 8px;
+  color: #213047;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .topic-row {

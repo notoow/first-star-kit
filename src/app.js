@@ -140,6 +140,26 @@ function extractInstallCommand(readme) {
   return line || "";
 }
 
+function analyzeReadme(readme) {
+  const text = String(readme || "");
+  const lower = text.toLowerCase();
+  const imagePattern = /!\[[^\]]*\]\([^)]+\)|<img\b/i;
+  const demoPattern = /\b(demo|preview|screenshot|live|try it|playground)\b/i;
+  const installPattern = /\b(quick start|getting started|installation|install|usage|setup)\b/i;
+  const contributionPattern = /\b(contributing|contribute|good first issue|help wanted|pull request|issue)\b/i;
+
+  return {
+    exists: Boolean(text.trim()),
+    wordCount: text.trim() ? text.trim().split(/\s+/).length : 0,
+    headingCount: (text.match(/^#{1,3}\s+/gm) || []).length,
+    hasInstall: Boolean(extractInstallCommand(text)) || installPattern.test(text),
+    hasDemo: demoPattern.test(text) || hasUrl(text.match(/https?:\/\/[^\s)]+/)?.[0] || ""),
+    hasScreenshot: imagePattern.test(text),
+    hasLicenseMention: lower.includes("license"),
+    hasContributionPath: contributionPattern.test(text),
+  };
+}
+
 function buildRepoDescription(data) {
   const name = data.projectName.trim() || "This project";
   const audience = data.audience.trim() || "developers";
@@ -349,6 +369,77 @@ function buildSprintPlan(data, repoKit, totalScore) {
   return items.slice(0, 6);
 }
 
+function buildDoctor(data, repoKit) {
+  const pulse = data.repoPulse;
+  const stats = pulse && pulse.readmeStats;
+  const imported = Boolean(pulse);
+  const checks = [
+    {
+      label: "Repo context",
+      ok: imported,
+      why: imported ? `Using live context from ${pulse.fullName}.` : "The doctor is strongest after a public GitHub import.",
+      fix: imported ? "Refresh import after major README changes." : "Paste a public GitHub URL and press Import.",
+    },
+    {
+      label: "README front door",
+      ok: stats ? stats.exists && stats.wordCount >= 80 : true,
+      why: stats
+        ? stats.exists
+          ? `${stats.wordCount} words and ${stats.headingCount} headings found.`
+          : "No README was found on the default branch."
+        : "The generated README is ready to export.",
+      fix: stats && !stats.exists ? "Add README.md before sharing the repo." : "Keep the first screen focused on the promise, demo, and quick start.",
+    },
+    {
+      label: "One-line promise",
+      ok: data.tagline.trim().length >= 24 && data.tagline.trim().length <= 130,
+      why: data.tagline.trim() ? `"${compact(data.tagline, 90)}"` : "No tagline yet.",
+      fix: "Write one sentence that says who it helps and what changes after using it.",
+    },
+    {
+      label: "Try path",
+      ok: Boolean(data.installCommand.trim()) && (stats ? stats.hasInstall : true),
+      why: data.installCommand.trim() ? compact(data.installCommand, 110) : "No quick-start command yet.",
+      fix: "Add the shortest install or open command near the top of the README.",
+    },
+    {
+      label: "Proof",
+      ok: hasUrl(data.demoUrl) || Boolean(stats && (stats.hasDemo || stats.hasScreenshot)),
+      why: hasUrl(data.demoUrl)
+        ? "A demo URL is visible."
+        : stats && stats.hasScreenshot
+          ? "A screenshot appears in README."
+          : "No demo or screenshot signal yet.",
+      fix: "Add a live demo, screenshot, or 20-second GIF above the feature list.",
+    },
+    {
+      label: "Reuse permission",
+      ok: Boolean(data.license.trim()) || Boolean(pulse && pulse.license) || Boolean(stats && stats.hasLicenseMention),
+      why: data.license.trim() || (pulse && pulse.license) || "License is unclear.",
+      fix: "Add a LICENSE file and mention it in the README.",
+    },
+    {
+      label: "Findability",
+      ok: repoKit.topics.length >= 5,
+      why: `${repoKit.topics.length} topics prepared.`,
+      fix: "Use at least five concrete GitHub topics, including the audience and workflow.",
+    },
+    {
+      label: "Next contribution",
+      ok: Boolean(stats && stats.hasContributionPath),
+      why: stats && stats.hasContributionPath ? "README mentions issues, PRs, or contribution." : "No visible contributor path found.",
+      fix: `Create this starter issue: ${repoKit.issues[0]}`,
+    },
+  ];
+
+  const passed = checks.filter((check) => check.ok).length;
+  return {
+    passed,
+    total: checks.length,
+    checks,
+  };
+}
+
 function firstPulseNudge(data, pulse, repoKit) {
   if (!pulse.readmeFound) return "Add a README before sharing. No launch copy can beat a missing front door.";
   if (!hasUrl(data.demoUrl)) return "Add a live demo or screenshot link so people can inspect the result.";
@@ -490,6 +581,36 @@ function renderSprint(items) {
                 <h2>${index + 1}. ${escapeHtml(item.title)}</h2>
                 <p>${escapeHtml(item.detail)}</p>
               </div>
+            </article>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function renderDoctor(doctor) {
+  const panel = document.querySelector('[data-panel="doctor"]');
+  panel.innerHTML = `
+    <article class="copy-block doctor-summary">
+      <div class="copy-block-head">
+        <h2>README Doctor</h2>
+        ${copyButton("doctor")}
+      </div>
+      <p>${doctor.passed}/${doctor.total} first-impression checks are passing.</p>
+    </article>
+    <div class="doctor-list">
+      ${doctor.checks
+        .map(
+          (check) => `
+            <article class="doctor-card ${check.ok ? "ok" : "warn"}">
+              <div class="doctor-card-head">
+                ${icon(check.ok ? "check" : "link")}
+                <h2>${escapeHtml(check.label)}</h2>
+                <span>${check.ok ? "Pass" : "Fix"}</span>
+              </div>
+              <p>${escapeHtml(check.why)}</p>
+              <strong>${escapeHtml(check.fix)}</strong>
             </article>
           `,
         )
@@ -650,10 +771,12 @@ function render() {
   const nudges = getNudges(state);
   const totalScore = Math.round(scores.reduce((sum, item) => sum + item.score, 0) / scores.length);
   const sprint = buildSprintPlan(state, repoKit, totalScore);
+  const doctor = buildDoctor(state, repoKit);
 
   renderReadme(readme);
   renderHooks(hooks);
   renderSprint(sprint);
+  renderDoctor(doctor);
   renderLaunch(posts);
   renderRepo(repoKit);
   renderScores(scores, nudges);
@@ -717,6 +840,12 @@ function textForCopy(key) {
       .map((item) => `${item.time} - ${item.title}\n${item.detail}`)
       .join("\n\n");
   }
+  if (key === "doctor") {
+    const doctor = buildDoctor(state, repoKit);
+    return doctor.checks
+      .map((check) => `${check.ok ? "PASS" : "FIX"} - ${check.label}\n${check.why}\nNext: ${check.fix}`)
+      .join("\n\n");
+  }
   if (key === "repoName") return repoKit.slug;
   if (key === "description") return repoKit.description;
   if (key === "topics") return repoKit.topics.join(", ");
@@ -772,6 +901,7 @@ async function importRepoFromGitHub(button) {
 
     const repo = await response.json();
     const readme = await fetchReadmeText(parsed.owner, parsed.repo, repo.default_branch || "main");
+    const readmeStats = analyzeReadme(readme);
     const installCommand = extractInstallCommand(readme);
     const topics = uniqueList([
       ...(repo.topics || []),
@@ -819,6 +949,7 @@ async function importRepoFromGitHub(button) {
         defaultBranch: repo.default_branch || "main",
         hasHomepage: hasUrl(repo.homepage),
         readmeFound: Boolean(readme),
+        readmeStats,
         topicsCount: topics.length,
       },
     };
