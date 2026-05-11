@@ -17,6 +17,7 @@ Getting a first GitHub star is often less about the code and more about whether 
 ## Features
 
 - Live README generator
+- Prominent live-demo Star repo button for turning visitors into stargazers
 - Public GitHub repo import for name, description, topics, homepage, license, and quick-start hints
 - Repo Pulse for stars, forks, issue count, recent activity, README, license, homepage, and topics
 - README badge strip generator for stars, license, last commit, issues, and demo
