@@ -16,7 +16,7 @@
     <meta property="og:url" content="https://notoow.github.io/first-star-kit/" />
     <meta name="twitter:card" content="summary_large_image" />
     <title>First Star Kit</title>
-    <link rel="stylesheet" href="./src/styles.css?v=20260511b" />
+    <link rel="stylesheet" href="./src/styles.css?v=20260511c" />
   </head>
   <body>
     <svg aria-hidden="true" class="svg-sprite">
@@ -158,7 +158,13 @@
 
           <div class="two-col">
             <label class="field">
-              <span>Repo URL</span>
+              <span class="field-label-row">
+                <span>Repo URL</span>
+                <button class="mini-action" type="button" data-action="import-repo">
+                  <svg class="icon"><use href="#i-github"></use></svg>
+                  <span>Import</span>
+                </button>
+              </span>
               <input data-field="repoUrl" placeholder="https://github.com/you/project" />
             </label>
             <label class="field">
@@ -166,6 +172,7 @@
               <input data-field="demoUrl" placeholder="https://project.dev" />
             </label>
           </div>
+          <div class="import-status" id="importStatus" aria-live="polite"></div>
 
           <label class="field">
             <span>Install command</span>
@@ -313,6 +320,6 @@
       </section>
     </main>
 
-    <script src="./src/app.js?v=20260511b"></script>
+    <script src="./src/app.js?v=20260511c"></script>
   </body>
 </html>

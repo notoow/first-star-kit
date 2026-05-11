@@ -95,6 +95,49 @@ function splitKeywords(value) {
     .slice(0, 10);
 }
 
+function titleizeRepoName(value) {
+  return String(value || "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+    .trim();
+}
+
+function uniqueList(values) {
+  return [...new Set(values.map((value) => slugify(value)).filter(Boolean))];
+}
+
+function parseGitHubRepoUrl(value) {
+  const text = String(value || "").trim();
+  const match = text.match(/^https?:\/\/github\.com\/([^/\s]+)\/([^/\s#?]+?)(?:\.git)?(?:[/?#].*)?$/i);
+  if (!match) return null;
+  return {
+    owner: match[1],
+    repo: match[2].replace(/\.git$/i, ""),
+  };
+}
+
+function extractInstallCommand(readme) {
+  const text = String(readme || "");
+  const fences = [...text.matchAll(/```(?:bash|sh|shell|zsh|powershell|ps1|console)?\s*([\s\S]*?)```/gi)];
+  const installish = /(npm|pnpm|yarn|bun|pip|uv|cargo|go run|go install|deno|python|ruby|gem|composer|docker)/i;
+
+  for (const fence of fences) {
+    const lines = fence[1]
+      .split("\n")
+      .map((line) => line.replace(/^\s*[$>]\s?/, "").trim())
+      .filter((line) => line && !line.startsWith("#"));
+    if (lines.some((line) => installish.test(line))) {
+      return lines.slice(0, 3).join("\n");
+    }
+  }
+
+  const line = text
+    .split("\n")
+    .map((item) => item.trim())
+    .find((item) => /^(npm|pnpm|yarn|bun|pip|uv|cargo|go|deno|python|docker)\b/i.test(item));
+  return line || "";
+}
+
 function buildRepoDescription(data) {
   const name = data.projectName.trim() || "This project";
   const audience = data.audience.trim() || "developers";
@@ -208,7 +251,7 @@ function buildHooks(data) {
   return [
     {
       title: "Problem-first",
-      text: `${audience} keep running into this: ${problem}. ${name} turns that into ${promise}.`,
+      text: `${audience} keep running into this: ${problem}. ${name} helps by ${promise}.`,
     },
     {
       title: "Fast promise",
@@ -224,7 +267,7 @@ function buildHooks(data) {
     },
     {
       title: "Star reason",
-      text: `Star ${name} if you want a small, reusable way to ${compact(promise, 100)}.`,
+      text: `Star ${name} if you want to revisit this workflow: ${compact(promise, 100)}.`,
     },
   ];
 }
@@ -543,6 +586,93 @@ function exportMarkdown() {
   URL.revokeObjectURL(url);
 }
 
+function setImportStatus(message, type = "info") {
+  const status = document.getElementById("importStatus");
+  status.textContent = message || "";
+  status.className = message ? `import-status show ${type}` : "import-status";
+}
+
+async function fetchReadmeText(owner, repo, branch) {
+  const rawUrl = `https://raw.githubusercontent.com/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/${encodeURIComponent(branch)}/README.md`;
+  const response = await fetch(rawUrl);
+  if (!response.ok) return "";
+  return response.text();
+}
+
+async function importRepoFromGitHub(button) {
+  const parsed = parseGitHubRepoUrl(state.repoUrl);
+  if (!parsed) {
+    setImportStatus("Paste a public GitHub repo URL first.", "error");
+    return;
+  }
+
+  button.disabled = true;
+  const label = button.querySelector("span");
+  const originalLabel = label.textContent;
+  label.textContent = "Importing";
+  setImportStatus(`Reading ${parsed.owner}/${parsed.repo} from GitHub...`);
+
+  try {
+    const response = await fetch(
+      `https://api.github.com/repos/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(parsed.repo)}`,
+      { headers: { Accept: "application/vnd.github+json" } },
+    );
+    if (!response.ok) {
+      throw new Error(response.status === 404 ? "Repo not found or private." : `GitHub returned ${response.status}.`);
+    }
+
+    const repo = await response.json();
+    const readme = await fetchReadmeText(parsed.owner, parsed.repo, repo.default_branch || "main");
+    const installCommand = extractInstallCommand(readme);
+    const topics = uniqueList([
+      ...(repo.topics || []),
+      repo.language || "",
+      "github",
+      "open-source",
+    ]).slice(0, 10);
+    const repoDescription = repo.description || "";
+    const audienceSeed = repo.language || topics[0] || "open-source";
+    const shouldReplace = (key) => !state[key] || state[key] === sampleState[key];
+
+    state = {
+      ...state,
+      projectName: titleizeRepoName(repo.name) || state.projectName,
+      tagline: repoDescription || state.tagline,
+      audience: shouldReplace("audience") ? `developers interested in ${audienceSeed}` : state.audience,
+      problem: shouldReplace("problem")
+        ? "strangers need to understand why this repo matters before they try it"
+        : state.problem,
+      promise: shouldReplace("promise")
+        ? "turning the repo's first impression into a clearer README, launch hook, and share card"
+        : state.promise,
+      demoUrl: hasUrl(repo.homepage) ? repo.homepage : state.demoUrl,
+      repoUrl: repo.html_url || state.repoUrl,
+      installCommand: installCommand || (shouldReplace("installCommand") ? "Follow the README quick start." : state.installCommand),
+      usageCommand: shouldReplace("usageCommand")
+        ? "Open the demo, scan the README, then try the smallest useful workflow."
+        : state.usageCommand,
+      license:
+        repo.license && repo.license.spdx_id && repo.license.spdx_id !== "NOASSERTION"
+          ? repo.license.spdx_id
+          : state.license,
+      keywords: topics.length ? topics.join(", ") : state.keywords,
+    };
+
+    saveState();
+    setInputs();
+    render();
+    setImportStatus(
+      `Imported ${repo.full_name}${installCommand ? " and found a quick-start command." : "."}`,
+      "success",
+    );
+  } catch (error) {
+    setImportStatus(error.message || "Could not import this repo.", "error");
+  } finally {
+    button.disabled = false;
+    label.textContent = originalLabel;
+  }
+}
+
 function wrapCanvasText(context, text, x, y, maxWidth, lineHeight, maxLines) {
   const words = String(text).split(/\s+/).filter(Boolean);
   const lines = [];
@@ -690,6 +820,10 @@ document.addEventListener("click", (event) => {
 
   if (action.dataset.action === "download-card") {
     downloadLaunchCard();
+  }
+
+  if (action.dataset.action === "import-repo") {
+    importRepoFromGitHub(action);
   }
 });
 

@@ -15,6 +15,7 @@ Getting a first GitHub star is often less about the code and more about whether 
 ## Features
 
 - Live README generator
+- Public GitHub repo import for name, description, topics, homepage, license, and quick-start hints
 - Copy-ready hooks for posts, DMs, and first-impression asks
 - GitHub repo name, description, topics, and starter issues
 - Launch copy for X, Reddit, Hacker News, Discord, and friendly DMs

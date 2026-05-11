@@ -142,6 +142,7 @@ a {
 .primary-action,
 .copy-button,
 .wide-action,
+.mini-action,
 .tabs button {
   display: inline-flex;
   align-items: center;
@@ -162,6 +163,7 @@ a {
 .primary-action:hover,
 .copy-button:hover,
 .wide-action:hover,
+.mini-action:hover,
 .tabs button:hover {
   border-color: #a8b7c9;
   background: #f9fbff;
@@ -284,6 +286,39 @@ p {
   font-weight: 700;
 }
 
+.field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.field-label-row > span {
+  min-width: 0;
+}
+
+.mini-action {
+  min-height: 27px;
+  border-color: rgba(14, 124, 123, 0.26);
+  color: var(--teal-dark);
+  background: #f4fbfb;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.mini-action .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.mini-action[disabled] {
+  cursor: wait;
+  opacity: 0.72;
+  transform: none;
+}
+
 .field input,
 .field textarea,
 .field select {
@@ -308,6 +343,33 @@ p {
 .field select:focus {
   border-color: var(--teal);
   box-shadow: 0 0 0 3px rgba(14, 124, 123, 0.14);
+}
+
+.import-status {
+  display: none;
+  border: 1px solid #d7e0ea;
+  border-radius: 8px;
+  color: #405069;
+  background: #f8fbff;
+  padding: 9px 11px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.import-status.show {
+  display: block;
+}
+
+.import-status.success {
+  border-color: rgba(14, 124, 123, 0.22);
+  color: var(--teal-dark);
+  background: #effaf8;
+}
+
+.import-status.error {
+  border-color: rgba(232, 93, 79, 0.32);
+  color: #9c352c;
+  background: #fff5f3;
 }
 
 .two-col {
