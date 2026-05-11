@@ -6,6 +6,8 @@
 
 First Star Kit helps developers turn a half-polished repo idea into the pieces people actually see first: README copy, GitHub metadata, starter issues, and launch posts.
 
+If this helps you make a repo easier to understand, please star it so this tiny launch can earn its first public signal.
+
 Live demo: https://notoow.github.io/first-star-kit/
 
 ![First Star Kit preview](assets/preview.png)
