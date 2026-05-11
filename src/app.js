@@ -559,6 +559,17 @@ Could you scan the repo for 30 seconds and tell me whether the value is clear?${
 ${link}`;
 }
 
+function buildFirstStarAsk(data) {
+  const name = data.projectName.trim() || "my open-source project";
+  const repo = hasUrl(data.repoUrl) ? data.repoUrl.trim() : primaryShareUrl(data);
+
+  return `I am trying to earn the first GitHub star for ${name}.
+
+Could you scan it for 30 seconds and star it if the value is clear?
+
+${repo}`;
+}
+
 function buildAskBoardMarkdown(data, includeTitle = true) {
   const board = buildAskBoard(data);
   const rows = board.targets.length
@@ -1492,6 +1503,7 @@ function textForCopy(key) {
   const askBoard = buildAskBoard(state);
 
   if (key === "readme") return readme;
+  if (key === "firstStarAsk") return buildFirstStarAsk(state);
   if (key === "launchLinks") return launchLinks.map((link) => `${link.label}: ${link.href}`).join("\n");
   if (key.startsWith("post:")) return posts[Number(key.split(":")[1])].text;
   if (key.startsWith("hook:")) return hooks[Number(key.split(":")[1])].text;
@@ -1976,6 +1988,11 @@ document.addEventListener("click", (event) => {
   if (action.dataset.action === "copy-kit-link") {
     copyText(buildKitLink(), null);
     showToast("Kit link copied");
+  }
+
+  if (action.dataset.action === "copy-first-star-ask") {
+    copyText(buildFirstStarAsk(state), null);
+    showToast("First-star ask copied");
   }
 
   if (action.dataset.action === "add-ask") {
