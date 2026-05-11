@@ -384,7 +384,7 @@ p {
 
 .tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 16px;
 }
@@ -476,6 +476,46 @@ p {
 .hook-block p {
   font-size: 16px;
   color: #213047;
+}
+
+.sprint-summary p {
+  color: var(--muted);
+}
+
+.sprint-list {
+  display: grid;
+  gap: 10px;
+}
+
+.sprint-step {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 13px;
+  border: 1px solid #d7e0ea;
+  border-radius: 8px;
+  background: var(--panel-strong);
+  padding: 14px;
+}
+
+.sprint-step > span {
+  color: var(--teal);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.sprint-step h2 {
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.sprint-step p {
+  margin-top: 7px;
+  color: #34445b;
+  font-size: 14px;
+  line-height: 1.45;
+  word-break: break-word;
 }
 
 .topic-row {
@@ -653,6 +693,83 @@ meter::-webkit-meter-optimum-value {
   font-weight: 800;
 }
 
+.repo-pulse-panel {
+  overflow: hidden;
+}
+
+.pulse-empty {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.pulse-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.pulse-grid div {
+  display: grid;
+  gap: 2px;
+  border: 1px solid #d7e0ea;
+  border-radius: 8px;
+  background: #f8fbff;
+  padding: 10px;
+}
+
+.pulse-grid strong {
+  color: var(--ink);
+  font-size: 22px;
+  line-height: 1;
+}
+
+.pulse-grid span,
+.pulse-meta span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.pulse-meta,
+.pulse-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.pulse-meta span,
+.pulse-checks div {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 27px;
+  border: 1px solid #c8d7ea;
+  border-radius: 999px;
+  background: #eef5ff;
+  padding: 0 9px;
+  font-weight: 800;
+}
+
+.pulse-checks div {
+  color: var(--teal-dark);
+  background: #effaf8;
+}
+
+.pulse-checks div.warn {
+  color: #9c352c;
+  border-color: rgba(232, 93, 79, 0.32);
+  background: #fff5f3;
+}
+
+.pulse-checks .icon {
+  width: 14px;
+  height: 14px;
+}
+
 .checklist-panel {
   display: grid;
   gap: 12px;
@@ -728,7 +845,7 @@ meter::-webkit-meter-optimum-value {
 
   .side-rail {
     grid-column: 1 / -1;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   }
 }
 
@@ -775,6 +892,10 @@ meter::-webkit-meter-optimum-value {
   }
 
   .tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .sprint-step {
     grid-template-columns: 1fr;
   }
 

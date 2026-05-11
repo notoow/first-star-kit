@@ -16,6 +16,7 @@ const sampleState = {
   license: "MIT",
   keywords: "github, readme, launch, open-source, marketing, developer-tools",
   tone: "direct",
+  repoPulse: null,
 };
 
 const blankState = {
@@ -32,6 +33,7 @@ const blankState = {
   license: "MIT",
   keywords: "",
   tone: "direct",
+  repoPulse: null,
 };
 
 let state = loadInitialState();
@@ -290,6 +292,72 @@ function buildRepoChecklist(data) {
   };
 }
 
+function daysSince(value) {
+  if (!value) return null;
+  const time = new Date(value).getTime();
+  if (Number.isNaN(time)) return null;
+  return Math.max(0, Math.round((Date.now() - time) / 86400000));
+}
+
+function buildSprintPlan(data, repoKit, totalScore) {
+  const pulse = data.repoPulse;
+  const items = [];
+  const missingLinks = !hasUrl(data.demoUrl) || !hasUrl(data.repoUrl);
+  const lowTopics = repoKit.topics.length < 5;
+  const hasFirstStar = pulse && pulse.stars > 0;
+
+  items.push({
+    time: "0-5 min",
+    title: pulse ? "Fix the first visible gap" : "Import the repo",
+    detail: pulse
+      ? firstPulseNudge(data, pulse, repoKit)
+      : "Paste a public GitHub URL and import it so the sprint can use live repo context.",
+  });
+  items.push({
+    time: "5-12 min",
+    title: "Sharpen the repo face",
+    detail: missingLinks
+      ? "Add the repo and demo links in the top half of the README."
+      : `Use this description: ${repoKit.description}`,
+  });
+  items.push({
+    time: "12-18 min",
+    title: "Create one low-friction entry point",
+    detail: lowTopics
+      ? "Add a few searchable topics so the repo is findable after the launch post fades."
+      : `Open this issue: ${repoKit.issues[0]}`,
+  });
+  items.push({
+    time: "18-25 min",
+    title: "Post where the pain is already obvious",
+    detail: buildHooks(data)[0].text,
+  });
+  items.push({
+    time: "25-30 min",
+    title: hasFirstStar ? "Ask for the second honest signal" : "Ask for the first honest signal",
+    detail: buildLaunchPosts(data).find((post) => post.title === "Friendly DM").text,
+  });
+
+  if (totalScore < 80) {
+    items.unshift({
+      time: "Before posting",
+      title: "Raise the readiness score",
+      detail: getNudges(data)[0],
+    });
+  }
+
+  return items.slice(0, 6);
+}
+
+function firstPulseNudge(data, pulse, repoKit) {
+  if (!pulse.readmeFound) return "Add a README before sharing. No launch copy can beat a missing front door.";
+  if (!hasUrl(data.demoUrl)) return "Add a live demo or screenshot link so people can inspect the result.";
+  if (!pulse.license) return "Add a license so people know whether they can reuse the project.";
+  if (repoKit.topics.length < 5) return "Add at least five topics so GitHub can place the repo in the right rooms.";
+  if (daysSince(pulse.pushedAt) > 30) return "Push a tiny recent polish commit so the repo looks alive.";
+  return "The basics are in place. Share it with one person who has this exact problem.";
+}
+
 function getScores(data) {
   const clarity = clampScore(
     20 +
@@ -402,6 +470,34 @@ function renderHooks(hooks) {
     .join("");
 }
 
+function renderSprint(items) {
+  const panel = document.querySelector('[data-panel="sprint"]');
+  panel.innerHTML = `
+    <article class="copy-block sprint-summary">
+      <div class="copy-block-head">
+        <h2>30-minute first-star sprint</h2>
+        ${copyButton("sprint")}
+      </div>
+      <p>Small, specific moves beat vague launch energy. Do these in order.</p>
+    </article>
+    <div class="sprint-list">
+      ${items
+        .map(
+          (item, index) => `
+            <article class="sprint-step">
+              <span>${escapeHtml(item.time)}</span>
+              <div>
+                <h2>${index + 1}. ${escapeHtml(item.title)}</h2>
+                <p>${escapeHtml(item.detail)}</p>
+              </div>
+            </article>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
 function renderRepo(repoKit) {
   const panel = document.querySelector('[data-panel="repo"]');
   panel.innerHTML = `
@@ -494,6 +590,49 @@ function renderPreview(repoKit) {
   document.getElementById("previewLinks").innerHTML = links.join("");
 }
 
+function renderRepoPulse(pulse) {
+  const target = document.getElementById("repoPulse");
+  if (!pulse) {
+    target.innerHTML = `
+      <p class="pulse-empty">Import a public GitHub repo to see stars, activity, license, README status, and launch blockers.</p>
+    `;
+    return;
+  }
+
+  const updatedDays = daysSince(pulse.pushedAt);
+  const checks = [
+    { label: "README", ok: pulse.readmeFound },
+    { label: "Homepage", ok: pulse.hasHomepage },
+    { label: "License", ok: Boolean(pulse.license) },
+    { label: "Topics", ok: pulse.topicsCount >= 5 },
+  ];
+
+  target.innerHTML = `
+    <div class="pulse-grid">
+      <div><strong>${pulse.stars}</strong><span>stars</span></div>
+      <div><strong>${pulse.forks}</strong><span>forks</span></div>
+      <div><strong>${pulse.openIssues}</strong><span>issues</span></div>
+      <div><strong>${updatedDays === null ? "?" : updatedDays}</strong><span>days since push</span></div>
+    </div>
+    <div class="pulse-meta">
+      <span>${escapeHtml(pulse.language || "Unknown language")}</span>
+      <span>${escapeHtml(pulse.license || "No license")}</span>
+    </div>
+    <div class="pulse-checks">
+      ${checks
+        .map(
+          (check) => `
+            <div class="${check.ok ? "ok" : "warn"}">
+              ${icon(check.ok ? "check" : "link")}
+              <span>${escapeHtml(check.label)}</span>
+            </div>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
 function renderShareCard(repoKit, totalScore) {
   document.getElementById("cardName").textContent = state.projectName || "Project Name";
   document.getElementById("cardTagline").textContent =
@@ -509,13 +648,17 @@ function render() {
   const repoKit = buildRepoChecklist(state);
   const scores = getScores(state);
   const nudges = getNudges(state);
+  const totalScore = Math.round(scores.reduce((sum, item) => sum + item.score, 0) / scores.length);
+  const sprint = buildSprintPlan(state, repoKit, totalScore);
 
   renderReadme(readme);
   renderHooks(hooks);
+  renderSprint(sprint);
   renderLaunch(posts);
   renderRepo(repoKit);
-  const totalScore = renderScores(scores, nudges);
+  renderScores(scores, nudges);
   renderPreview(repoKit);
+  renderRepoPulse(state.repoPulse);
   renderShareCard(repoKit, totalScore);
   setActiveTab(activeTab);
 }
@@ -568,6 +711,12 @@ function textForCopy(key) {
   if (key === "readme") return readme;
   if (key.startsWith("post:")) return posts[Number(key.split(":")[1])].text;
   if (key.startsWith("hook:")) return hooks[Number(key.split(":")[1])].text;
+  if (key === "sprint") {
+    const totalScore = Math.round(getScores(state).reduce((sum, item) => sum + item.score, 0) / 3);
+    return buildSprintPlan(state, repoKit, totalScore)
+      .map((item) => `${item.time} - ${item.title}\n${item.detail}`)
+      .join("\n\n");
+  }
   if (key === "repoName") return repoKit.slug;
   if (key === "description") return repoKit.description;
   if (key === "topics") return repoKit.topics.join(", ");
@@ -656,6 +805,22 @@ async function importRepoFromGitHub(button) {
           ? repo.license.spdx_id
           : state.license,
       keywords: topics.length ? topics.join(", ") : state.keywords,
+      repoPulse: {
+        fullName: repo.full_name,
+        stars: repo.stargazers_count || 0,
+        forks: repo.forks_count || 0,
+        openIssues: repo.open_issues_count || 0,
+        language: repo.language || "",
+        license:
+          repo.license && repo.license.spdx_id && repo.license.spdx_id !== "NOASSERTION"
+            ? repo.license.spdx_id
+            : "",
+        pushedAt: repo.pushed_at || "",
+        defaultBranch: repo.default_branch || "main",
+        hasHomepage: hasUrl(repo.homepage),
+        readmeFound: Boolean(readme),
+        topicsCount: topics.length,
+      },
     };
 
     saveState();

@@ -16,7 +16,9 @@ Getting a first GitHub star is often less about the code and more about whether 
 
 - Live README generator
 - Public GitHub repo import for name, description, topics, homepage, license, and quick-start hints
+- Repo Pulse for stars, forks, issue count, recent activity, README, license, homepage, and topics
 - Copy-ready hooks for posts, DMs, and first-impression asks
+- 30-minute first-star sprint plan
 - GitHub repo name, description, topics, and starter issues
 - Launch copy for X, Reddit, Hacker News, Discord, and friendly DMs
 - Star-readiness scoring for clarity, trust, and shareability
