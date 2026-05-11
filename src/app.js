@@ -1143,15 +1143,103 @@ function textForCopy(key) {
   return "";
 }
 
-function exportMarkdown() {
-  const repoKit = buildRepoChecklist(state);
-  const file = new Blob([buildReadme(state)], { type: "text/markdown" });
+function downloadMarkdown(filename, content) {
+  const file = new Blob([content], { type: "text/markdown" });
   const url = URL.createObjectURL(file);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = `${repoKit.slug || "README"}.md`;
+  anchor.download = filename;
   anchor.click();
   URL.revokeObjectURL(url);
+}
+
+function buildLaunchPackMarkdown(data) {
+  const repoKit = buildRepoChecklist(data);
+  const readme = buildReadme(data);
+  const posts = buildLaunchPosts(data);
+  const hooks = buildHooks(data);
+  const scores = getScores(data);
+  const totalScore = Math.round(scores.reduce((sum, item) => sum + item.score, 0) / scores.length);
+  const sprint = buildSprintPlan(data, repoKit, totalScore);
+  const doctor = buildDoctor(data, repoKit);
+  const patches = buildPatchSections(data, repoKit, doctor);
+  const launchLinks = buildLaunchLinks(data, repoKit, posts);
+  const pulse = data.repoPulse;
+  const metadata = [
+    `Project: ${data.projectName || "Project Name"}`,
+    `Repo: ${data.repoUrl || "Not set"}`,
+    `Demo: ${data.demoUrl || "Not set"}`,
+    `Readiness: ${totalScore}/100`,
+    `Topics: ${repoKit.topics.join(", ")}`,
+  ];
+
+  const pulseBlock = pulse
+    ? `## Repo Pulse
+
+- Stars: ${pulse.stars}
+- Forks: ${pulse.forks}
+- Open issues: ${pulse.openIssues}
+- Language: ${pulse.language || "Unknown"}
+- License: ${pulse.license || "Unknown"}
+- Last push: ${pulse.pushedAt || "Unknown"}
+- README found: ${pulse.readmeFound ? "yes" : "no"}`
+    : `## Repo Pulse
+
+Import a public GitHub repo to include live repository context.`;
+
+  return `# Launch Pack: ${data.projectName || "Project Name"}
+
+Prepared with First Star Kit.
+
+${metadata.map((item) => `- ${item}`).join("\n")}
+
+${pulseBlock}
+
+## Star Readiness
+
+${scores.map((score) => `- ${score.label}: ${score.score}/100 - ${score.hint}`).join("\n")}
+
+## 30-Minute Sprint
+
+${sprint.map((item) => `### ${item.time} - ${item.title}\n\n${item.detail}`).join("\n\n")}
+
+## README Doctor
+
+${doctor.checks
+  .map((check) => `- ${check.ok ? "PASS" : "FIX"} ${check.label}: ${check.why} Next: ${check.fix}`)
+  .join("\n")}
+
+## Drop-In Patches
+
+${patches.map((section) => `### ${section.title}\n\n${section.text}`).join("\n\n---\n\n")}
+
+## Launch Links
+
+${launchLinks.map((link) => `- ${link.label}: ${link.href}`).join("\n")}
+
+## Launch Posts
+
+${posts.map((post) => `### ${post.title}\n\n${post.text}`).join("\n\n")}
+
+## Hooks
+
+${hooks.map((hook) => `### ${hook.title}\n\n${hook.text}`).join("\n\n")}
+
+## README Draft
+
+${readme}
+`;
+}
+
+function exportMarkdown() {
+  const repoKit = buildRepoChecklist(state);
+  downloadMarkdown(`${repoKit.slug || "README"}.md`, buildReadme(state));
+}
+
+function exportLaunchPack() {
+  const repoKit = buildRepoChecklist(state);
+  downloadMarkdown(`${repoKit.slug || "project"}-launch-pack.md`, buildLaunchPackMarkdown(state));
+  showToast("Launch pack exported");
 }
 
 function setImportStatus(message, type = "info") {
@@ -1402,6 +1490,10 @@ document.addEventListener("click", (event) => {
 
   if (action.dataset.action === "export") {
     exportMarkdown();
+  }
+
+  if (action.dataset.action === "export-pack") {
+    exportLaunchPack();
   }
 
   if (action.dataset.action === "download-card") {

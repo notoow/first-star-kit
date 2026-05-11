@@ -21,6 +21,7 @@ Getting a first GitHub star is often less about the code and more about whether 
 - Drop-in README patches for hero copy, quick start, why section, starter issue, and feedback ask
 - Launch links for X, Hacker News, Reddit, LinkedIn, email, GitHub starter issue, and repo
 - Shareable kit links that restore the filled workspace from the URL
+- One-file Markdown launch pack export
 - Copy-ready hooks for posts, DMs, and first-impression asks
 - 30-minute first-star sprint plan
 - GitHub repo name, description, topics, and starter issues
