@@ -440,6 +440,88 @@ function buildDoctor(data, repoKit) {
   };
 }
 
+function buildPatchSections(data, repoKit, doctor) {
+  const name = data.projectName.trim() || "Project Name";
+  const tagline = data.tagline.trim() || "A clear one-line promise for your project.";
+  const audience = data.audience.trim() || "developers";
+  const problem = data.problem.trim() || "the current workflow takes too much effort";
+  const promise = data.promise.trim() || "making the next step obvious";
+  const demo = data.demoUrl.trim();
+  const repo = data.repoUrl.trim();
+  const install = data.installCommand.trim() || "Open the project and follow the README.";
+  const issueTitle = `Improve the first-run experience for ${name}`;
+  const failedChecks = doctor.checks.filter((check) => !check.ok);
+  const topFixes = failedChecks.length
+    ? failedChecks.map((check) => `- ${check.label}: ${check.fix}`).join("\n")
+    : "- Keep the README promise, demo, quick start, and first issue visible above the fold.";
+
+  return [
+    {
+      title: "README hero",
+      text: `# ${name}
+
+> ${tagline}
+
+${name} helps ${audience} who run into this problem: ${sentence(problem, "the workflow is harder than it should be")} It helps by ${promise}.
+
+${demo ? `Demo: ${demo}\n` : ""}${repo ? `Repo: ${repo}\n` : ""}`,
+    },
+    {
+      title: "Quick start",
+      text: `## Quick start
+
+\`\`\`bash
+${install}
+\`\`\`
+
+Try the smallest useful path first. If anything is confusing, open an issue with the step that failed and what you expected to happen.`,
+    },
+    {
+      title: "Why this exists",
+      text: `## Why this exists
+
+- Problem: ${sentence(problem, "the pain is specific")}
+- Audience: ${sentence(audience, "the user is specific")}
+- Outcome: ${sentence(promise, "the result is practical")}
+- Status: ${data.status || "MVP"}, with feedback especially welcome from ${audience}.`,
+    },
+    {
+      title: "Starter issue",
+      text: `Title: ${issueTitle}
+
+Body:
+The first-run path should feel obvious to someone landing on the repo for the first time.
+
+Tasks:
+- Confirm the README explains the problem in one screen.
+- Confirm the demo or screenshot is visible before the feature list.
+- Run the quick start and note the first confusing step.
+- Suggest one sentence that would make the value clearer.
+
+Good first issue: yes`,
+    },
+    {
+      title: "Doctor fixes",
+      text: `## First-impression fixes
+
+${topFixes}
+
+Prepared with First Star Kit.`,
+    },
+    {
+      title: "Feedback ask",
+      text: `I am trying to make ${name} understandable in under 30 seconds.
+
+Could you look at the README and tell me:
+1. What do you think it does?
+2. Would you try it?
+3. What sentence or screenshot is missing?
+
+${repo || "[repo link]"}`,
+    },
+  ];
+}
+
 function firstPulseNudge(data, pulse, repoKit) {
   if (!pulse.readmeFound) return "Add a README before sharing. No launch copy can beat a missing front door.";
   if (!hasUrl(data.demoUrl)) return "Add a live demo or screenshot link so people can inspect the result.";
@@ -619,6 +701,32 @@ function renderDoctor(doctor) {
   `;
 }
 
+function renderPatch(sections) {
+  const panel = document.querySelector('[data-panel="patch"]');
+  panel.innerHTML = `
+    <article class="copy-block patch-summary">
+      <div class="copy-block-head">
+        <h2>Drop-in patches</h2>
+        ${copyButton("patch")}
+      </div>
+      <p>Copy the pieces that match the Doctor findings and paste them into the repo.</p>
+    </article>
+    ${sections
+      .map(
+        (section, index) => `
+          <article class="patch-card">
+            <div class="copy-block-head">
+              <h2>${escapeHtml(section.title)}</h2>
+              ${copyButton(`patch:${index}`)}
+            </div>
+            <pre>${escapeHtml(section.text)}</pre>
+          </article>
+        `,
+      )
+      .join("")}
+  `;
+}
+
 function renderRepo(repoKit) {
   const panel = document.querySelector('[data-panel="repo"]');
   panel.innerHTML = `
@@ -772,11 +880,13 @@ function render() {
   const totalScore = Math.round(scores.reduce((sum, item) => sum + item.score, 0) / scores.length);
   const sprint = buildSprintPlan(state, repoKit, totalScore);
   const doctor = buildDoctor(state, repoKit);
+  const patchSections = buildPatchSections(state, repoKit, doctor);
 
   renderReadme(readme);
   renderHooks(hooks);
   renderSprint(sprint);
   renderDoctor(doctor);
+  renderPatch(patchSections);
   renderLaunch(posts);
   renderRepo(repoKit);
   renderScores(scores, nudges);
@@ -830,10 +940,16 @@ function textForCopy(key) {
   const posts = buildLaunchPosts(state);
   const hooks = buildHooks(state);
   const repoKit = buildRepoChecklist(state);
+  const doctor = buildDoctor(state, repoKit);
+  const patches = buildPatchSections(state, repoKit, doctor);
 
   if (key === "readme") return readme;
   if (key.startsWith("post:")) return posts[Number(key.split(":")[1])].text;
   if (key.startsWith("hook:")) return hooks[Number(key.split(":")[1])].text;
+  if (key.startsWith("patch:")) return patches[Number(key.split(":")[1])].text;
+  if (key === "patch") {
+    return patches.map((section) => `## ${section.title}\n\n${section.text}`).join("\n\n---\n\n");
+  }
   if (key === "sprint") {
     const totalScore = Math.round(getScores(state).reduce((sum, item) => sum + item.score, 0) / 3);
     return buildSprintPlan(state, repoKit, totalScore)
@@ -841,7 +957,6 @@ function textForCopy(key) {
       .join("\n\n");
   }
   if (key === "doctor") {
-    const doctor = buildDoctor(state, repoKit);
     return doctor.checks
       .map((check) => `${check.ok ? "PASS" : "FIX"} - ${check.label}\n${check.why}\nNext: ${check.fix}`)
       .join("\n\n");

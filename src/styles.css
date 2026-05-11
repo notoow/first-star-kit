@@ -384,7 +384,7 @@ p {
 
 .tabs {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 16px;
 }
@@ -592,6 +592,39 @@ p {
   color: #213047;
   font-size: 13px;
   line-height: 1.4;
+}
+
+.patch-summary p {
+  color: var(--muted);
+}
+
+.patch-card {
+  border: 1px solid #d7e0ea;
+  border-radius: 8px;
+  background: var(--panel-strong);
+  padding: 15px;
+}
+
+.patch-card h2 {
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.patch-card pre {
+  overflow: auto;
+  max-height: 300px;
+  margin: 13px 0 0;
+  border: 1px solid #d7e0ea;
+  border-radius: 8px;
+  color: #1f2a3a;
+  background: #ffffff;
+  padding: 13px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .topic-row {
