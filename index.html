@@ -16,7 +16,7 @@
     <meta property="og:url" content="https://notoow.github.io/first-star-kit/" />
     <meta name="twitter:card" content="summary_large_image" />
     <title>First Star Kit</title>
-    <link rel="stylesheet" href="./src/styles.css?v=20260511n" />
+    <link rel="stylesheet" href="./src/styles.css?v=20260512a" />
   </head>
   <body>
     <svg aria-hidden="true" class="svg-sprite">
@@ -289,6 +289,20 @@
         </section>
 
         <aside class="side-rail" aria-label="Readiness and preview">
+          <section class="panel star-watch-panel">
+            <div class="preview-head star-watch-head">
+              <div>
+                <svg class="icon"><use href="#i-star"></use></svg>
+                <span>Star Watch</span>
+              </div>
+              <button class="mini-action" type="button" data-action="refresh-stars">
+                <svg class="icon"><use href="#i-refresh"></use></svg>
+                <span>Refresh</span>
+              </button>
+            </div>
+            <div id="starWatch"></div>
+          </section>
+
           <section class="panel score-panel">
             <div class="score-top">
               <div>
@@ -364,6 +378,6 @@
       </section>
     </main>
 
-    <script src="./src/app.js?v=20260511n"></script>
+    <script src="./src/app.js?v=20260512a"></script>
   </body>
 </html>

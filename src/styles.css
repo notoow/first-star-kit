@@ -1095,6 +1095,76 @@ meter::-webkit-meter-optimum-value {
   overflow: hidden;
 }
 
+.star-watch-panel {
+  overflow: hidden;
+}
+
+.star-watch-head {
+  justify-content: space-between;
+}
+
+.star-watch-head > div {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.star-watch-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.star-watch-main strong {
+  color: var(--ink);
+  font-size: 38px;
+  line-height: 1;
+}
+
+.star-watch-main span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.star-watch-main.has-star strong {
+  color: var(--teal-dark);
+}
+
+.star-watch-note,
+.star-watch-empty {
+  margin-top: 9px;
+  color: #34445b;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.star-watch-empty {
+  color: var(--muted);
+}
+
+.star-watch-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.star-watch-meta span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  border: 1px solid #c8d7ea;
+  border-radius: 999px;
+  color: #214d8f;
+  background: #eef5ff;
+  padding: 0 9px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .pulse-empty {
   margin-top: 12px;
   color: var(--muted);

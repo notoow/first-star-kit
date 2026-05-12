@@ -19,6 +19,7 @@ Getting a first GitHub star is often less about the code and more about whether 
 ## Features
 
 - Live README generator
+- Live Star Watch panel for checking the current GitHub star count in the app
 - Prominent live-demo Star repo button for turning visitors into stargazers
 - One-click Korean first-star ask copy for sending a clear request fast
 - Public GitHub repo import for name, description, topics, homepage, license, and quick-start hints

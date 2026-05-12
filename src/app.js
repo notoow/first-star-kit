@@ -42,6 +42,7 @@ const sampleState = {
   keywords: "github, readme, launch, open-source, marketing, developer-tools",
   tone: "direct",
   repoPulse: null,
+  starWatch: null,
   askTargets: [
     {
       id: "sample-maker-friend",
@@ -82,6 +83,7 @@ const blankState = {
   keywords: "",
   tone: "direct",
   repoPulse: null,
+  starWatch: null,
   askTargets: [],
 };
 
@@ -265,6 +267,7 @@ function normalizeState(value) {
   return {
     ...value,
     askTargets: normalizeAskTargets(value.askTargets),
+    starWatch: value.starWatch && typeof value.starWatch === "object" ? value.starWatch : null,
   };
 }
 
@@ -717,6 +720,25 @@ function daysSince(value) {
   const time = new Date(value).getTime();
   if (Number.isNaN(time)) return null;
   return Math.max(0, Math.round((Date.now() - time) / 86400000));
+}
+
+function minutesSince(value) {
+  if (!value) return Infinity;
+  const time = new Date(value).getTime();
+  if (Number.isNaN(time)) return Infinity;
+  return Math.max(0, Math.round((Date.now() - time) / 60000));
+}
+
+function formatCheckedAt(value) {
+  if (!value) return "Not checked yet";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not checked yet";
+  return date.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function buildSprintPlan(data, repoKit, totalScore) {
@@ -1417,6 +1439,49 @@ function renderRepoPulse(pulse) {
   `;
 }
 
+function renderStarWatch(watch) {
+  const target = document.getElementById("starWatch");
+  if (!target) return;
+  const repo = parseGitHubRepoUrl(state.repoUrl);
+
+  if (!repo) {
+    target.innerHTML = `
+      <p class="star-watch-empty">Paste a GitHub repo URL to watch the current star count.</p>
+    `;
+    return;
+  }
+
+  if (!watch) {
+    target.innerHTML = `
+      <div class="star-watch-main">
+        <strong>?</strong>
+        <span>stars</span>
+      </div>
+      <p class="star-watch-note">Refresh to check ${escapeHtml(repo.owner)}/${escapeHtml(repo.repo)}.</p>
+    `;
+    return;
+  }
+
+  const count = Number.isFinite(watch.stars) ? watch.stars : 0;
+  const message = watch.error
+    ? watch.error
+    : count > 0
+      ? "First public signal landed. Keep the ask board warm."
+      : "No stars yet. Copy the Korean ask and send it to one person.";
+
+  target.innerHTML = `
+    <div class="star-watch-main ${count > 0 ? "has-star" : ""}">
+      <strong>${count}</strong>
+      <span>${count === 1 ? "star" : "stars"}</span>
+    </div>
+    <p class="star-watch-note">${escapeHtml(message)}</p>
+    <div class="star-watch-meta">
+      <span>${escapeHtml(watch.fullName || `${repo.owner}/${repo.repo}`)}</span>
+      <span>${escapeHtml(formatCheckedAt(watch.checkedAt))}</span>
+    </div>
+  `;
+}
+
 function renderShareCard(repoKit, totalScore) {
   document.getElementById("cardName").textContent = state.projectName || "Project Name";
   document.getElementById("cardTagline").textContent =
@@ -1450,6 +1515,7 @@ function render() {
   renderRepo(repoKit, badgeKit);
   renderScores(scores, nudges);
   renderPreview(repoKit);
+  renderStarWatch(state.starWatch);
   renderRepoPulse(state.repoPulse);
   renderShareCard(repoKit, totalScore);
   setActiveTab(activeTab);
@@ -1736,6 +1802,12 @@ async function importRepoFromGitHub(button) {
         readmeStats,
         topicsCount: topics.length,
       },
+      starWatch: {
+        fullName: repo.full_name,
+        stars: repo.stargazers_count || 0,
+        checkedAt: new Date().toISOString(),
+        error: "",
+      },
     };
 
     saveState();
@@ -1751,6 +1823,80 @@ async function importRepoFromGitHub(button) {
     button.disabled = false;
     label.textContent = originalLabel;
   }
+}
+
+async function refreshStarWatch(button, options = {}) {
+  const parsed = parseGitHubRepoUrl(state.repoUrl);
+  if (!parsed) {
+    state = {
+      ...state,
+      starWatch: null,
+    };
+    saveState();
+    render();
+    if (!options.silent) showToast("Add a GitHub repo URL first");
+    return;
+  }
+
+  const label = button ? button.querySelector("span") : null;
+  const originalLabel = label ? label.textContent : "";
+  if (button) button.disabled = true;
+  if (label) label.textContent = "Checking";
+
+  try {
+    const response = await fetch(
+      `https://api.github.com/repos/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(parsed.repo)}`,
+      { headers: { Accept: "application/vnd.github+json" } },
+    );
+    if (!response.ok) {
+      throw new Error(response.status === 404 ? "Repo not found." : `GitHub returned ${response.status}.`);
+    }
+
+    const repo = await response.json();
+    const stars = repo.stargazers_count || 0;
+    state = {
+      ...state,
+      starWatch: {
+        fullName: repo.full_name,
+        stars,
+        checkedAt: new Date().toISOString(),
+        error: "",
+      },
+      repoPulse: state.repoPulse
+        ? {
+            ...state.repoPulse,
+            stars,
+            forks: repo.forks_count ?? state.repoPulse.forks,
+            openIssues: repo.open_issues_count ?? state.repoPulse.openIssues,
+            pushedAt: repo.pushed_at || state.repoPulse.pushedAt,
+          }
+        : state.repoPulse,
+    };
+    saveState();
+    render();
+    if (!options.silent) showToast(stars > 0 ? "Star found" : "Still at 0 stars");
+  } catch (error) {
+    state = {
+      ...state,
+      starWatch: {
+        fullName: `${parsed.owner}/${parsed.repo}`,
+        stars: state.starWatch && Number.isFinite(state.starWatch.stars) ? state.starWatch.stars : 0,
+        checkedAt: new Date().toISOString(),
+        error: error.message || "Could not refresh stars.",
+      },
+    };
+    saveState();
+    render();
+    if (!options.silent) showToast("Star check failed");
+  } finally {
+    if (button) button.disabled = false;
+    if (label) label.textContent = originalLabel;
+  }
+}
+
+function shouldAutoRefreshStars() {
+  if (!hasUrl(state.repoUrl) || !parseGitHubRepoUrl(state.repoUrl)) return false;
+  return !state.starWatch || minutesSince(state.starWatch.checkedAt) >= 15;
 }
 
 function wrapCanvasText(context, text, x, y, maxWidth, lineHeight, maxLines) {
@@ -1998,6 +2144,10 @@ document.addEventListener("click", (event) => {
     showToast("First-star ask copied");
   }
 
+  if (action.dataset.action === "refresh-stars") {
+    refreshStarWatch(action);
+  }
+
   if (action.dataset.action === "add-ask") {
     if (addAskTarget(readNewAskTarget())) clearNewAskFields();
   }
@@ -2021,4 +2171,7 @@ render();
 if (initialSharedState) {
   saveState();
   showToast("Loaded kit from link");
+}
+if (shouldAutoRefreshStars()) {
+  refreshStarWatch(null, { silent: true });
 }
